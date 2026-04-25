@@ -1,0 +1,5 @@
+# Talkent
+
+talkent.db
+*.log
+config.yaml
