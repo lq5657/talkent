@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/lq5657/talkent/internal/config"
+	"github.com/lq5657/talkent/internal/llm"
 	"github.com/lq5657/talkent/internal/log"
 	"github.com/lq5657/talkent/internal/server"
 	"github.com/lq5657/talkent/internal/store"
@@ -32,6 +33,14 @@ func main() {
 	}
 	defer db.Close()
 	logger.Info("database initialized", "path", cfg.Database.Path)
+
+	llmClient, err := llm.NewClient(&cfg.LLM, logger)
+	if err != nil {
+		logger.Error("failed to initialize LLM client", "error", err)
+		os.Exit(1)
+	}
+	_ = llmClient // will be wired to server in later changes
+	logger.Info("LLM client initialized", "provider", cfg.LLM.Provider, "model", cfg.LLM.Model)
 
 	srv := server.New(cfg, db, logger)
 

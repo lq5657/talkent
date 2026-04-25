@@ -5,7 +5,7 @@
 
 ```text
 last_updated: 2026-04-25
-updated_by: cc-archive
+updated_by: cc-propose
 ```
 
 ## 1. 正式 Change
@@ -13,13 +13,14 @@ updated_by: cc-archive
 | change_id | 状态 | 来源 | 目标摘要 | 影响模块 | 阻塞 / 依赖 | 下一命令 | 最近证据 |
 |-----------|------|------|----------|----------|-------------|----------|----------|
 | scaffold-project | done | cc-archive | 项目脚手架：Go 模块、目录结构、配置、SQLite、HTTP Server | cmd/server, internal/{config,store,server,log} | 无 | - | review PASSED, Stage1+2 pass, 0 findings, 已归档 |
+| llm-client | review | cc-apply | LLM 客户端抽象：go-openai SDK、单活跃 provider、错误重试 | internal/llm, cmd/server | scaffold-project(done) | `cc-review llm-client` | 4 tasks done, 19 tests passed, V1-V6 apply-covered |
 
 ## 2. Backlog 候选
 
 | 候选项 | 来源 | 推荐 change_id | 价值 | 前置条件 | 建议下一步 |
 |--------|------|----------------|------|----------|------------|
 | 项目脚手架搭建 | cc-new-project | `scaffold-project` | 工程基础：模块初始化、目录结构、配置、SQLite | 无 | `cc-propose scaffold-project` |
-| LLM 客户端抽象 | cc-new-project | `llm-client` | 统一 LLM 接入，多模型可配置 | `scaffold-project` | 在脚手架后就绪后提案 |
+| LLM 客户端抽象 | cc-new-project | `llm-client` | 统一 LLM 接入，多模型可配置 | `scaffold-project` | 已提案为正式 change |
 | 角色设定与目标推荐 | cc-new-project | `role-and-goal` | 角色→目标→维度的推导链路 | `scaffold-project` | 可与 LLM 客户端并行提案 |
 | 对话会话管理 | cc-new-project | `chat-session` | 对话生命周期、角色注入、记忆管理 | `llm-client` | LLM 客户端完成后提案 |
 | 分析引擎 | cc-new-project | `analysis-engine` | 多维度分析报告生成，核心差异化 | `llm-client`, `role-and-goal`, `chat-session` | 依赖就绪后提案 |
