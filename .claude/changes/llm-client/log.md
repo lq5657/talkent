@@ -51,3 +51,11 @@
 | `cmd/server/main.go` | 修改 | +6 |
 | `go.mod` | 修改 | +1 dep |
 | `go.sum` | 修改 | +indirect deps |
+
+## 2026-04-26 cc-fix
+
+### 修复记录
+
+| Finding | 根因 | 最小修复 | Guard | 验证 |
+|---------|------|----------|-------|------|
+| F4 (Important) | NewClient 未将 cfg.Timeout 应用到 HTTP client | openai.go 新增 `if cfg.Timeout > 0 { ocfg.HTTPClient = &http.Client{Timeout: cfg.Timeout} }` | TestNewClient_ConfigTimeoutApplied + TestChatCompletion_HTTPTimesOutWithConfigTimeout | 21 tests passed, go build + vet PASSED |

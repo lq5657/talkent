@@ -315,3 +315,56 @@ func TestNewClient_NilConfig(t *testing.T) {
 		t.Fatal("expected error for nil config, got nil")
 	}
 }
+
+func TestNewClient_ConfigTimeoutApplied(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	cfg := &config.LLMConfig{
+		Provider: "test",
+		BaseURL:  "http://localhost:1",
+		APIKey:   "test-key",
+		Model:    "test-model",
+		Timeout:  5 * time.Second,
+	}
+
+	client, err := NewClient(cfg, logger)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if client.client == nil {
+		t.Fatal("client should not be nil")
+	}
+}
+
+func TestChatCompletion_HTTPTimesOutWithConfigTimeout(t *testing.T) {
+	ts := newTestServer(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(5 * time.Second)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(chatCompletionResponse("test-model", "slow", 1, 1, 2)))
+	})
+	defer ts.Close()
+
+	cfg := &config.LLMConfig{
+		Provider: "test",
+		BaseURL:  ts.URL,
+		APIKey:   "test-api-key",
+		Model:    "test-model",
+		Timeout:  200 * time.Millisecond,
+	}
+
+	ocfg := openai.DefaultConfig(cfg.APIKey)
+	ocfg.BaseURL = ts.URL
+	ocfg.HTTPClient = &http.Client{Timeout: cfg.Timeout}
+
+	client := &OpenAIClient{
+		client: openai.NewClientWithConfig(ocfg),
+		cfg:    cfg,
+		logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+	}
+
+	_, err := client.Chat(context.Background(), []ChatMessage{
+		{Role: RoleUser, Content: "test"},
+	}, nil)
+	if err == nil {
+		t.Fatal("expected error from HTTP client timeout, got nil")
+	}
+}

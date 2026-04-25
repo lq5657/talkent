@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
+	"net/http"
 	"time"
 
 	"github.com/lq5657/talkent/internal/config"
@@ -28,6 +29,9 @@ func NewClient(cfg *config.LLMConfig, logger *slog.Logger) (*OpenAIClient, error
 	ocfg := openai.DefaultConfig(cfg.APIKey)
 	if cfg.BaseURL != "" {
 		ocfg.BaseURL = cfg.BaseURL
+	}
+	if cfg.Timeout > 0 {
+		ocfg.HTTPClient = &http.Client{Timeout: cfg.Timeout}
 	}
 
 	return &OpenAIClient{

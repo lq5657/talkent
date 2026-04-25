@@ -13,7 +13,7 @@ updated_by: cc-propose
 | change_id | 状态 | 来源 | 目标摘要 | 影响模块 | 阻塞 / 依赖 | 下一命令 | 最近证据 |
 |-----------|------|------|----------|----------|-------------|----------|----------|
 | scaffold-project | done | cc-archive | 项目脚手架：Go 模块、目录结构、配置、SQLite、HTTP Server | cmd/server, internal/{config,store,server,log} | 无 | - | review PASSED, Stage1+2 pass, 0 findings, 已归档 |
-| llm-client | review | cc-apply | LLM 客户端抽象：go-openai SDK、单活跃 provider、错误重试 | internal/llm, cmd/server | scaffold-project(done) | `cc-review llm-client` | 4 tasks done, 19 tests passed, V1-V6 apply-covered |
+| llm-client | review | cc-fix | LLM 客户端抽象：go-openai SDK、单活跃 provider、错误重试 | internal/llm, cmd/server | scaffold-project(done) | `cc-archive llm-client` | F4 fixed, 21 tests passed, review PASSED, 可归档 |
 
 ## 2. Backlog 候选
 
