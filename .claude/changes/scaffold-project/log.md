@@ -7,6 +7,7 @@
 | 2026-04-25 | propose | `cc-propose scaffold-project` 创建提案 | |
 | 2026-04-25 | apply | `cc-apply` 6 tasks 全部完成，4 个 commit | go build/test/vet + E2E 通过 |
 | 2026-04-25 | review | `cc-review` Stage 1+2 PASSED，0 findings，可归档 | |
+| 2026-04-25 | done | `cc-archive` 归档完成，knowledge 无需沉淀 | 待合并到主分支 |
 
 #### 技术决策
 

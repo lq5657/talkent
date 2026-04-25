@@ -5,14 +5,14 @@
 
 ```text
 last_updated: 2026-04-25
-updated_by: cc-new-project
+updated_by: cc-archive
 ```
 
 ## 1. 正式 Change
 
 | change_id | 状态 | 来源 | 目标摘要 | 影响模块 | 阻塞 / 依赖 | 下一命令 | 最近证据 |
 |-----------|------|------|----------|----------|-------------|----------|----------|
-| scaffold-project | review | cc-review | 项目脚手架：Go 模块、目录结构、配置、SQLite、HTTP Server | cmd/server, internal/{config,store,server,log} | 无 | cc-archive | review PASSED, Stage1+2 pass, 0 findings |
+| scaffold-project | done | cc-archive | 项目脚手架：Go 模块、目录结构、配置、SQLite、HTTP Server | cmd/server, internal/{config,store,server,log} | 无 | - | review PASSED, Stage1+2 pass, 0 findings, 已归档 |
 
 ## 2. Backlog 候选
 
