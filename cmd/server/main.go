@@ -1,3 +1,42 @@
 package main
 
-func main() {}
+import (
+	"flag"
+	"log/slog"
+	"os"
+
+	"github.com/lq5657/talkent/internal/config"
+	"github.com/lq5657/talkent/internal/log"
+	"github.com/lq5657/talkent/internal/server"
+	"github.com/lq5657/talkent/internal/store"
+)
+
+func main() {
+	configPath := flag.String("config", "config.yaml", "path to config file")
+	flag.Parse()
+
+	cfg, err := config.Load(*configPath)
+	if err != nil {
+		slog.New(slog.NewTextHandler(os.Stderr, nil)).
+			Error("failed to load config", "error", err)
+		os.Exit(1)
+	}
+
+	logger := log.New(&cfg.Log)
+	logger.Info("config loaded", "path", *configPath)
+
+	db, err := store.Open(cfg.Database.Path)
+	if err != nil {
+		logger.Error("failed to open database", "error", err)
+		os.Exit(1)
+	}
+	defer db.Close()
+	logger.Info("database initialized", "path", cfg.Database.Path)
+
+	srv := server.New(cfg, db, logger)
+
+	if err := server.Run(srv, logger); err != nil {
+		logger.Error("server stopped", "error", err)
+		os.Exit(1)
+	}
+}
