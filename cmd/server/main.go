@@ -3,13 +3,16 @@ package main
 import (
 	"flag"
 	"log/slog"
+	"net/http"
 	"os"
 
 	"github.com/lq5657/talkent/internal/config"
 	"github.com/lq5657/talkent/internal/llm"
 	"github.com/lq5657/talkent/internal/log"
+	"github.com/lq5657/talkent/internal/memory"
 	"github.com/lq5657/talkent/internal/role"
 	"github.com/lq5657/talkent/internal/server"
+	"github.com/lq5657/talkent/internal/session"
 	"github.com/lq5657/talkent/internal/store"
 )
 
@@ -45,7 +48,15 @@ func main() {
 	roleSvc := role.NewService(llmClient, logger)
 	roleHandler := role.NewHandler(roleSvc, logger)
 
-	srv := server.New(cfg, db, logger, roleHandler.RegisterRoutes)
+	sessionStore := store.NewSessionStore(db)
+	memoryManager := memory.NewManager(cfg.Session.MemoryWindowSize, llmClient, logger)
+	sessionSvc := session.NewService(sessionStore, memoryManager, llmClient, logger)
+	sessionHandler := session.NewHandler(sessionSvc, logger)
+
+	srv := server.New(cfg, db, logger, func(mux *http.ServeMux) {
+		roleHandler.RegisterRoutes(mux)
+		sessionHandler.RegisterRoutes(mux)
+	})
 
 	if err := server.Run(srv, logger); err != nil {
 		logger.Error("server stopped", "error", err)

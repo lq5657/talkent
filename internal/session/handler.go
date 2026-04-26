@@ -1,0 +1,209 @@
+package session
+
+import (
+	"encoding/json"
+	"log/slog"
+	"net/http"
+
+	"github.com/lq5657/talkent/internal/role"
+)
+
+type Handler struct {
+	svc    *Service
+	logger *slog.Logger
+}
+
+func NewHandler(svc *Service, logger *slog.Logger) *Handler {
+	return &Handler{svc: svc, logger: logger}
+}
+
+func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("POST /api/sessions", h.handleCreate)
+	mux.HandleFunc("POST /api/sessions/{id}/chat", h.handleChat)
+	mux.HandleFunc("POST /api/sessions/{id}/end", h.handleEnd)
+	mux.HandleFunc("GET /api/sessions/{id}", h.handleGet)
+}
+
+type createSessionRequest struct {
+	RoleDescription string             `json:"role_description"`
+	Scenario        string             `json:"scenario"`
+	RoleType        role.RoleType      `json:"role_type"`
+	Goals           []role.TrainingGoal `json:"goals"`
+	Dimensions      []role.Dimension   `json:"dimensions"`
+	RoundLimit      int                `json:"round_limit"`
+}
+
+type createSessionResponse struct {
+	SessionID  string `json:"session_id"`
+	Status     string `json:"status"`
+	RoundLimit int    `json:"round_limit"`
+	CreatedAt  string `json:"created_at"`
+}
+
+func (h *Handler) handleCreate(w http.ResponseWriter, r *http.Request) {
+	var req createSessionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.logger.Error("invalid request body", "error", err)
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+
+	if req.RoleDescription == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "role_description is required"})
+		return
+	}
+
+	sess, err := h.svc.CreateSession(r.Context(), CreateSessionRequest{
+		RoleDescription: req.RoleDescription,
+		Scenario:        req.Scenario,
+		RoleType:        req.RoleType,
+		Goals:           req.Goals,
+		Dimensions:      req.Dimensions,
+		RoundLimit:      req.RoundLimit,
+	})
+	if err != nil {
+		h.logger.Error("create session failed", "error", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to create session"})
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, createSessionResponse{
+		SessionID:  sess.ID,
+		Status:     sess.Status,
+		RoundLimit: sess.RoundLimit,
+		CreatedAt:  sess.CreatedAt.Format("2006-01-02T15:04:05Z"),
+	})
+}
+
+type chatRequest struct {
+	Content string `json:"content"`
+}
+
+type chatResponse struct {
+	Reply        string      `json:"reply"`
+	RoundInfo    roundInfo   `json:"round_info"`
+	MemorySource string      `json:"memory_source"`
+}
+
+type roundInfo struct {
+	Current int  `json:"current"`
+	Limit   int  `json:"limit"`
+	IsLast  bool `json:"is_last"`
+}
+
+func (h *Handler) handleChat(w http.ResponseWriter, r *http.Request) {
+	sessionID := r.PathValue("id")
+
+	var req chatRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.logger.Error("invalid request body", "error", err)
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+
+	if req.Content == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "content is required"})
+		return
+	}
+
+	result, err := h.svc.Chat(r.Context(), sessionID, req.Content)
+	if err != nil {
+		switch err {
+		case ErrSessionNotFound:
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "session not found"})
+		case ErrSessionCompleted:
+			writeJSON(w, http.StatusConflict, map[string]string{"error": "session already completed"})
+		default:
+			h.logger.Error("chat failed", "error", err, "session_id", sessionID)
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to process chat"})
+		}
+		return
+	}
+
+	writeJSON(w, http.StatusOK, chatResponse{
+		Reply: result.Reply,
+		RoundInfo: roundInfo{
+			Current: result.CurrentRound,
+			Limit:   result.RoundLimit,
+			IsLast:  result.IsLast,
+		},
+		MemorySource: result.MemorySource,
+	})
+}
+
+type endSessionResponse struct {
+	SessionID  string `json:"session_id"`
+	Status     string `json:"status"`
+	FinalRound int    `json:"final_round"`
+}
+
+func (h *Handler) handleEnd(w http.ResponseWriter, r *http.Request) {
+	sessionID := r.PathValue("id")
+
+	sess, err := h.svc.EndSession(r.Context(), sessionID)
+	if err != nil {
+		switch err {
+		case ErrSessionNotFound:
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "session not found"})
+		case ErrSessionCompleted:
+			writeJSON(w, http.StatusConflict, map[string]string{"error": "session already completed"})
+		default:
+			h.logger.Error("end session failed", "error", err)
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to end session"})
+		}
+		return
+	}
+
+	msgCount, _ := h.svc.store.CountMessages(r.Context(), sessionID)
+	writeJSON(w, http.StatusOK, endSessionResponse{
+		SessionID:  sess.ID,
+		Status:     sess.Status,
+		FinalRound: msgCount / 2,
+	})
+}
+
+type getSessionResponse struct {
+	SessionID       string `json:"session_id"`
+	Status          string `json:"status"`
+	RoleDescription string `json:"role_description"`
+	RoundLimit      int    `json:"round_limit"`
+	CurrentRound    int    `json:"current_round"`
+	MessageCount    int    `json:"message_count"`
+	CreatedAt       string `json:"created_at"`
+}
+
+func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
+	sessionID := r.PathValue("id")
+
+	sess, err := h.svc.GetSession(r.Context(), sessionID)
+	if err != nil {
+		if err == ErrSessionNotFound {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "session not found"})
+			return
+		}
+		h.logger.Error("get session failed", "error", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to get session"})
+		return
+	}
+
+	var rc roleConfigJSON
+	json.Unmarshal([]byte(sess.RoleConfig), &rc)
+
+	msgCount, _ := h.svc.store.CountMessages(r.Context(), sessionID)
+
+	writeJSON(w, http.StatusOK, getSessionResponse{
+		SessionID:       sess.ID,
+		Status:          sess.Status,
+		RoleDescription: rc.Description,
+		RoundLimit:      sess.RoundLimit,
+		CurrentRound:    msgCount / 2,
+		MessageCount:    msgCount,
+		CreatedAt:       sess.CreatedAt.Format("2006-01-02T15:04:05Z"),
+	})
+}
+
+func writeJSON(w http.ResponseWriter, status int, v any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(v)
+}
