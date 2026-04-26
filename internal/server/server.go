@@ -13,10 +13,14 @@ import (
 	"github.com/lq5657/talkent/internal/config"
 )
 
-func New(cfg *config.Config, db *sql.DB, logger *slog.Logger) *http.Server {
+func New(cfg *config.Config, db *sql.DB, logger *slog.Logger, registerRoutes func(*http.ServeMux)) *http.Server {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /health", healthHandler(db, logger))
+
+	if registerRoutes != nil {
+		registerRoutes(mux)
+	}
 
 	return &http.Server{
 		Addr:    cfg.Addr(),

@@ -8,6 +8,7 @@ import (
 	"github.com/lq5657/talkent/internal/config"
 	"github.com/lq5657/talkent/internal/llm"
 	"github.com/lq5657/talkent/internal/log"
+	"github.com/lq5657/talkent/internal/role"
 	"github.com/lq5657/talkent/internal/server"
 	"github.com/lq5657/talkent/internal/store"
 )
@@ -39,10 +40,12 @@ func main() {
 		logger.Error("failed to initialize LLM client", "error", err)
 		os.Exit(1)
 	}
-	_ = llmClient // will be wired to server in later changes
 	logger.Info("LLM client initialized", "provider", cfg.LLM.Provider, "model", cfg.LLM.Model)
 
-	srv := server.New(cfg, db, logger)
+	roleSvc := role.NewService(llmClient, logger)
+	roleHandler := role.NewHandler(roleSvc, logger)
+
+	srv := server.New(cfg, db, logger, roleHandler.RegisterRoutes)
 
 	if err := server.Run(srv, logger); err != nil {
 		logger.Error("server stopped", "error", err)

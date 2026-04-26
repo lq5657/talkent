@@ -4,8 +4,8 @@
 它不是 `spec.md` / `tasks.md` 的替代品；真实需求、验收和证据仍以单个 `changes/<change-id>/` 为准。
 
 ```text
-last_updated: 2026-04-25
-updated_by: cc-propose
+last_updated: 2026-04-26
+updated_by: cc-apply
 ```
 
 ## 1. 正式 Change
@@ -13,7 +13,8 @@ updated_by: cc-propose
 | change_id | 状态 | 来源 | 目标摘要 | 影响模块 | 阻塞 / 依赖 | 下一命令 | 最近证据 |
 |-----------|------|------|----------|----------|-------------|----------|----------|
 | scaffold-project | done | cc-archive | 项目脚手架：Go 模块、目录结构、配置、SQLite、HTTP Server | cmd/server, internal/{config,store,server,log} | 无 | - | review PASSED, Stage1+2 pass, 0 findings, 已归档 |
-| llm-client | review | cc-fix | LLM 客户端抽象：go-openai SDK、单活跃 provider、错误重试 | internal/llm, cmd/server | scaffold-project(done) | `cc-archive llm-client` | F4 fixed, 21 tests passed, review PASSED, 可归档 |
+| llm-client | done | cc-archive | LLM 客户端抽象：go-openai SDK、单活跃 provider、错误重试 | internal/llm, cmd/server | scaffold-project(done) | - | review PASSED, F4 fixed, 21 tests, 已归档 |
+| role-and-goal | review | cc-apply | 角色设定→目标推荐→维度确定的推导链路 | internal/role, internal/server, cmd/server | scaffold-project(done), llm-client(done) | cc-review role-and-goal | 5/5 tasks done, 47 tests passed, go vet clean |
 
 ## 2. Backlog 候选
 
