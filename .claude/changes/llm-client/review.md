@@ -1,3 +1,23 @@
+---
+change_id: llm-client
+stage1_status: pass
+stage2_status: pass
+final_status: pass
+findings:
+  - level: Minor
+    description: NewClient 不校验 logger 为 nil
+    status: accepted
+  - level: Minor
+    description: NewClient 不校验 APIKey 为空
+    status: accepted
+  - level: Minor
+    description: 重试耗尽错误不包含重试历史
+    status: accepted
+  - level: Important
+    description: config.LLMConfig.Timeout 未应用到 HTTP 客户端
+    status: fixed
+---
+
 # Review — llm-client
 
 ## 审查信息

@@ -1,6 +1,6 @@
 ---
 change_id: role-and-goal
-status: review
+status: done
 depends_on:
   - scaffold-project
   - llm-client
