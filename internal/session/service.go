@@ -48,6 +48,22 @@ type ChatResult struct {
 	MemorySource string `json:"memory_source"`
 }
 
+type EndSessionResult struct {
+	SessionID  string
+	Status     string
+	FinalRound int
+}
+
+type SessionDetail struct {
+	SessionID       string
+	Status          string
+	RoleDescription string
+	RoundLimit      int
+	CurrentRound    int
+	MessageCount    int
+	CreatedAt       time.Time
+}
+
 func (s *Service) CreateSession(ctx context.Context, req CreateSessionRequest) (*store.Session, error) {
 	now := time.Now()
 	roleConfig := roleConfigJSON{Description: req.RoleDescription, Scenario: req.Scenario, Type: req.RoleType}
@@ -116,12 +132,10 @@ func (s *Service) Chat(ctx context.Context, sessionID string, userContent string
 	}
 
 	// Build context with memory
-	var rc roleConfigJSON
-	json.Unmarshal([]byte(sess.RoleConfig), &rc)
-	var goals []role.TrainingGoal
-	json.Unmarshal([]byte(sess.Goals), &goals)
-	var dims []role.Dimension
-	json.Unmarshal([]byte(sess.Dimensions), &dims)
+	rc, goals, dims, err := s.parseSessionConfig(sess)
+	if err != nil {
+		return nil, fmt.Errorf("parse session config: %w", err)
+	}
 
 	systemPrompt := BuildSystemPrompt(rc.Description, rc.Scenario, goals, dims)
 
@@ -174,7 +188,7 @@ func (s *Service) Chat(ctx context.Context, sessionID string, userContent string
 	}, nil
 }
 
-func (s *Service) EndSession(ctx context.Context, sessionID string) (*store.Session, error) {
+func (s *Service) EndSession(ctx context.Context, sessionID string) (*EndSessionResult, error) {
 	sess, err := s.store.GetSession(ctx, sessionID)
 	if err != nil {
 		return nil, fmt.Errorf("get session: %w", err)
@@ -190,10 +204,18 @@ func (s *Service) EndSession(ctx context.Context, sessionID string) (*store.Sess
 		return nil, fmt.Errorf("end session: %w", err)
 	}
 
-	sess.Status = "completed"
-	msgCount, _ := s.store.CountMessages(ctx, sessionID)
+	msgCount, err := s.store.CountMessages(ctx, sessionID)
+	if err != nil {
+		s.logger.Warn("count messages after end session failed", "session_id", sessionID, "error", err)
+		msgCount = 0
+	}
+
 	s.logger.Info("session ended manually", "session_id", sessionID, "final_round", msgCount/2, "trigger", "manual")
-	return sess, nil
+	return &EndSessionResult{
+		SessionID:  sessionID,
+		Status:     "completed",
+		FinalRound: msgCount / 2,
+	}, nil
 }
 
 func (s *Service) GetSession(ctx context.Context, sessionID string) (*store.Session, error) {
@@ -205,6 +227,52 @@ func (s *Service) GetSession(ctx context.Context, sessionID string) (*store.Sess
 		return nil, ErrSessionNotFound
 	}
 	return sess, nil
+}
+
+func (s *Service) GetSessionDetail(ctx context.Context, sessionID string) (*SessionDetail, error) {
+	sess, err := s.store.GetSession(ctx, sessionID)
+	if err != nil {
+		return nil, fmt.Errorf("get session: %w", err)
+	}
+	if sess == nil {
+		return nil, ErrSessionNotFound
+	}
+
+	rc, _, _, err := s.parseSessionConfig(sess)
+	if err != nil {
+		return nil, fmt.Errorf("parse session config: %w", err)
+	}
+
+	msgCount, err := s.store.CountMessages(ctx, sessionID)
+	if err != nil {
+		return nil, fmt.Errorf("count messages: %w", err)
+	}
+
+	return &SessionDetail{
+		SessionID:       sess.ID,
+		Status:          sess.Status,
+		RoleDescription: rc.Description,
+		RoundLimit:      sess.RoundLimit,
+		CurrentRound:    msgCount / 2,
+		MessageCount:    msgCount,
+		CreatedAt:       sess.CreatedAt,
+	}, nil
+}
+
+func (s *Service) parseSessionConfig(sess *store.Session) (roleConfigJSON, []role.TrainingGoal, []role.Dimension, error) {
+	var rc roleConfigJSON
+	if err := json.Unmarshal([]byte(sess.RoleConfig), &rc); err != nil {
+		return rc, nil, nil, fmt.Errorf("unmarshal role config: %w", err)
+	}
+	var goals []role.TrainingGoal
+	if err := json.Unmarshal([]byte(sess.Goals), &goals); err != nil {
+		return rc, nil, nil, fmt.Errorf("unmarshal goals: %w", err)
+	}
+	var dims []role.Dimension
+	if err := json.Unmarshal([]byte(sess.Dimensions), &dims); err != nil {
+		return rc, nil, nil, fmt.Errorf("unmarshal dimensions: %w", err)
+	}
+	return rc, goals, dims, nil
 }
 
 type roleConfigJSON struct {

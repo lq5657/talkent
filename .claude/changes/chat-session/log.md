@@ -70,3 +70,91 @@
 - `rules/configuration.md`：仅新增 1 个配置项，已在 spec 记录
 - `rules/security.md`：无资金、密钥、敏感数据变更
 - `rules/observability.md`：日志观测点已在 spec 设计，但属于标准 INFO/ERROR 日志，无特殊需求
+
+## 2026-04-27 — cc-review
+
+### Stage 1: PASS — 所有 spec 需求项、业务规则、API 契约均有对应实现
+
+### Stage 2: CONDITIONAL PASS — 2 Important + 3 Minor
+
+| # | 严重度 | 问题 |
+|---|--------|------|
+| F1 | Important | Handler 直接访问 svc.store.CountMessages 和 json.Unmarshal，绕过 Service 层 |
+| F2 | Important | Chat 中 3 次 json.Unmarshal 吞错误 + EndSession 中 CountMessages 吞错误 |
+| F3 | Minor | contains/findSubstring 重复实现 strings.Contains |
+| F4 | Minor | writeJSON 重复定义 |
+| F5 | Minor | round_limit=0 无测试覆盖 |
+
+## 2026-04-27 — cc-fix
+
+### 修复记录
+
+**F1 (Important) → fixed**
+
+- 症状：Handler 直接访问 `h.svc.store.CountMessages()` 和 `json.Unmarshal(sess.RoleConfig)`
+- 失败点：handler.go:157,190,192 绕过 Service 层
+- 根因：Handler 需要聚合数据（currentRound/messageCount/roleDescription），但 Service 未提供对应方法
+- 最小修复：新增 `GetSessionDetail` 返回聚合视图；`EndSession` 返回 `EndSessionResult`（含 FinalRound）；Handler 不再直接访问 store 或反序列化
+- Guard：handler_test.go 中 TestHandleGet/TestHandleEnd 验证正确行为
+- Fresh verification：23 tests passed
+
+**F2 (Important) → fixed**
+
+- 症状：3 次 `json.Unmarshal` 错误被静默忽略，1 次 `CountMessages` 错误被忽略
+- 失败点：service.go:120-124,194
+- 根因：Chat 中 Unmarshal 未做错误处理；EndSession 中 CountMessages 用 `_` 忽略
+- 最小修复：新增 `parseSessionConfig` 方法集中处理 Unmarshal 并返回错误；EndSession 中 CountMessages 失败时记录 Warn 日志并降级为 0
+- Guard：Unmarshal 错误现在会返回给调用方；EndSession 降级场景有 Warn 日志
+- Fresh verification：23 tests passed
+
+**F3 (Minor) → fixed**
+
+- 替换自定义 `contains`/`findSubstring` 为 `strings.Contains`
+
+**F4 (Minor) → accepted**
+
+- `writeJSON` 重复定义在 role/handler.go 和 session/handler.go
+- 接受理由：MVP 阶段两处实现完全相同且稳定，提取到共享包是合理的后续优化但不影响正确性
+
+**F5 (Minor) → fixed**
+
+- 新增 `TestChat_UnlimitedRounds`：验证 round_limit=0 时 isLast 始终为 false，会话保持 active
+
+### 触发的专题规则
+
+- `rules/verification.md`：修复后重新运行完整验证
+- `rules/coding-style.md`：F2 修复后不再违反"禁止吞掉错误"
+- `rules/debugging-workflow.md`：按 symptom → failure point → root cause → minimal fix → guard → verification 流程处理每个 Finding
+
+### 未触发的专题规则
+
+- 数据库（未修改 schema）、API 兼容性（无 breaking change）、安全（无敏感数据变更）、发布（MVP 新增模块）
+
+### 最终验证
+
+- `go build ./...` — PASSED
+- `go vet ./...` — PASSED
+- `go test ./...` — 70 passed in 9 packages
+
+## 2026-04-27 — cc-archive
+
+### 归档检查
+
+- Review 状态：PASS（Stage 1 PASS, Stage 2 PASS）
+- Open Findings：0（2 Important fixed, 2 Minor fixed, 1 Minor accepted）
+- Blocked Tasks：0
+- Unexplained Gaps：0
+- Fresh Evidence：go build/vet/test 70 passed ✅
+
+### 知识沉淀决策
+
+- 沉淀文件：`knowledge/session-memory-patterns.md`（4 条：滑动窗口+摘要压缩、Service 聚合视图、集中 JSON Unmarshal、测试模式）
+- 知识索引：新增 3 条踩坑记录（Handler 绕过 Service 层、集中 JSON 反序列化、摘要降级不阻断）
+- 理由：会话记忆管理模式（窗口+摘要+降级）在后续分析引擎和多轮对话扩展中可复用；分层违规教训可防止其他 Handler 重复犯同样错误
+
+### 归档验证
+
+- `go build ./...` — PASSED
+- `go vet ./...` — PASSED
+- `go test ./...` — 70 passed in 9 packages
+- `spec.status` → done

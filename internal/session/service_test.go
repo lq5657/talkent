@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/lq5657/talkent/internal/llm"
@@ -88,7 +89,7 @@ func TestBuildSystemPrompt(t *testing.T) {
 	// Must contain key parts
 	checks := []string{"面试者", "技术面试", "逻辑条理性", "论点清晰度"}
 	for _, c := range checks {
-		if !contains(prompt, c) {
+		if !strings.Contains(prompt, c) {
 			t.Errorf("prompt missing %q", c)
 		}
 	}
@@ -154,6 +155,35 @@ func TestChat_RoundLimitAutoEnd(t *testing.T) {
 	}
 }
 
+func TestChat_UnlimitedRounds(t *testing.T) {
+	s := setupTestStore(t)
+	mock := &mockClient{response: "回复"}
+	mgr := memory.NewManager(10, mock, testLogger)
+	svc := NewService(s, mgr, mock, testLogger)
+
+	sess, _ := svc.CreateSession(context.Background(), CreateSessionRequest{
+		RoleDescription: "面试者",
+		RoundLimit:      0, // unlimited
+	})
+
+	// Multiple rounds should never trigger isLast
+	for i := 0; i < 5; i++ {
+		r, err := svc.Chat(context.Background(), sess.ID, "msg")
+		if err != nil {
+			t.Fatalf("Chat round %d: %v", i+1, err)
+		}
+		if r.IsLast {
+			t.Errorf("round %d: IsLast should be false when round_limit=0", i+1)
+		}
+	}
+
+	// Session should still be active
+	got, _ := s.GetSession(context.Background(), sess.ID)
+	if got.Status != "active" {
+		t.Errorf("Status = %q, want %q (unlimited should stay active)", got.Status, "active")
+	}
+}
+
 func TestChat_CompletedSessionRejected(t *testing.T) {
 	s := setupTestStore(t)
 	mock := &mockClient{response: "回复"}
@@ -213,16 +243,3 @@ func TestGetSession_NotFound(t *testing.T) {
 	}
 }
 
-func contains(s, sub string) bool {
-	return len(s) >= len(sub) && (s == sub || len(sub) == 0 ||
-		(len(s) > 0 && len(sub) > 0 && findSubstring(s, sub)))
-}
-
-func findSubstring(s, sub string) bool {
-	for i := 0; i <= len(s)-len(sub); i++ {
-		if s[i:i+len(sub)] == sub {
-			return true
-		}
-	}
-	return false
-}

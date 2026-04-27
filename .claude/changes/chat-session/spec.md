@@ -1,6 +1,6 @@
 ---
 change_id: chat-session
-status: review
+status: done
 depends_on:
   - scaffold-project
   - llm-client
@@ -8,7 +8,7 @@ depends_on:
 parallel_safe: false
 branch: feat/chat-session
 created: 2026-04-26
-updated: 2026-04-26
+updated: 2026-04-27
 complexity: medium
 min_validation_level: L2
 ---

@@ -140,7 +140,7 @@ type endSessionResponse struct {
 func (h *Handler) handleEnd(w http.ResponseWriter, r *http.Request) {
 	sessionID := r.PathValue("id")
 
-	sess, err := h.svc.EndSession(r.Context(), sessionID)
+	result, err := h.svc.EndSession(r.Context(), sessionID)
 	if err != nil {
 		switch err {
 		case ErrSessionNotFound:
@@ -154,11 +154,10 @@ func (h *Handler) handleEnd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	msgCount, _ := h.svc.store.CountMessages(r.Context(), sessionID)
 	writeJSON(w, http.StatusOK, endSessionResponse{
-		SessionID:  sess.ID,
-		Status:     sess.Status,
-		FinalRound: msgCount / 2,
+		SessionID:  result.SessionID,
+		Status:     result.Status,
+		FinalRound: result.FinalRound,
 	})
 }
 
@@ -175,7 +174,7 @@ type getSessionResponse struct {
 func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
 	sessionID := r.PathValue("id")
 
-	sess, err := h.svc.GetSession(r.Context(), sessionID)
+	detail, err := h.svc.GetSessionDetail(r.Context(), sessionID)
 	if err != nil {
 		if err == ErrSessionNotFound {
 			writeJSON(w, http.StatusNotFound, map[string]string{"error": "session not found"})
@@ -186,19 +185,14 @@ func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var rc roleConfigJSON
-	json.Unmarshal([]byte(sess.RoleConfig), &rc)
-
-	msgCount, _ := h.svc.store.CountMessages(r.Context(), sessionID)
-
 	writeJSON(w, http.StatusOK, getSessionResponse{
-		SessionID:       sess.ID,
-		Status:          sess.Status,
-		RoleDescription: rc.Description,
-		RoundLimit:      sess.RoundLimit,
-		CurrentRound:    msgCount / 2,
-		MessageCount:    msgCount,
-		CreatedAt:       sess.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		SessionID:       detail.SessionID,
+		Status:          detail.Status,
+		RoleDescription: detail.RoleDescription,
+		RoundLimit:      detail.RoundLimit,
+		CurrentRound:    detail.CurrentRound,
+		MessageCount:    detail.MessageCount,
+		CreatedAt:       detail.CreatedAt.Format("2006-01-02T15:04:05Z"),
 	})
 }
 

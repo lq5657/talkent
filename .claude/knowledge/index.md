@@ -83,3 +83,6 @@
 * **模板匹配优先LLM兜底** : 推荐链路用二级策略（查表/模板匹配→LLM 生成），返回值带 source 字段区分来源，System Prompt 硬编码防注入 → `knowledge/role-patterns.md`
 * **server.New回调路由注册** : `registerRoutes func(*http.ServeMux)` 回调模式，各 Handler 实现 RegisterRoutes 方法，新增模块无需改 server.go → `knowledge/role-patterns.md`
 * **capturingClient测试模式** : 包装 mockLLMClient 拦截 ChatMessage 切片，验证 System Prompt 不被用户输入污染，与 llm-client 的 httptest.NewServer 模式互补 → `knowledge/role-patterns.md`
+* **Handler绕过Service层** : Handler 直接访问 svc.store 或做 json.Unmarshal 是分层违规，应通过 Service 提供的聚合视图方法（如 GetSessionDetail）获取数据 → `knowledge/session-memory-patterns.md`
+* **集中JSON反序列化** : store 中多个 JSON 字段需要反序列化时，集中到单一方法处理并检查错误，避免静默零值传入业务逻辑 → `knowledge/session-memory-patterns.md`
+* **摘要降级不阻断** : LLM 摘要失败时降级为仅窗口模式，memory_source 返回 "window"，不阻断对话主流程 → `knowledge/session-memory-patterns.md`
