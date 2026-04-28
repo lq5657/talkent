@@ -86,3 +86,7 @@
 * **Handler绕过Service层** : Handler 直接访问 svc.store 或做 json.Unmarshal 是分层违规，应通过 Service 提供的聚合视图方法（如 GetSessionDetail）获取数据 → `knowledge/session-memory-patterns.md`
 * **集中JSON反序列化** : store 中多个 JSON 字段需要反序列化时，集中到单一方法处理并检查错误，避免静默零值传入业务逻辑 → `knowledge/session-memory-patterns.md`
 * **摘要降级不阻断** : LLM 摘要失败时降级为仅窗口模式，memory_source 返回 "window"，不阻断对话主流程 → `knowledge/session-memory-patterns.md`
+* **OnSessionEndFunc回调解耦** : session.Service 通过回调字段暴露钩子，main.go 注入具体实现，避免循环依赖；Chat 自动结束和 EndSession 都必须调用 notifySessionEnd → `knowledge/analysis-patterns.md`
+* **SQLite migration双轨** : CREATE TABLE 包含所有列 + ALTER TABLE for 旧库 + isDuplicateColumnError 区分可忽略错误与真实失败；新列必须有 NOT NULL DEFAULT → `knowledge/analysis-patterns.md`
+* **LLM JSON容错** : 结构化 Prompt + code fence stripping + callWithRetry（一次重试 + 温度降低 + 截断日志） + 直接返回解析结果避免冗余 → `knowledge/llm-client-patterns.md`
+* **报告双重格式** : analysis_reports 同时存 dimension_results(JSON) + markdown_content(Markdown)，Handler 反序列化错误时设 nil 而非静默吞错 → `knowledge/analysis-patterns.md`

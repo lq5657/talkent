@@ -4,8 +4,8 @@
 它只沉淀可复用、可验证、相对稳定的工程事实；临时猜测必须写入"待确认"，不得写成事实。
 
 ```text
-last_updated: 2026-04-28
-updated_by: cc-init
+last_updated: 2026-04-29
+updated_by: cc-archive
 confidence: medium
 ```
 
@@ -33,7 +33,9 @@ confidence: medium
 | 会话创建 | `POST /api/sessions` | 角色配置+目标+维度 → 创建会话 → 返回 session ID | Session | `session/handler_test.go` | 参数校验 |
 | 会话结束 | `POST /api/sessions/{id}/end` | 状态校验 → 标记结束 → 返回摘要 | Session | `session/handler_test.go` | 状态流转 |
 | 会话查询 | `GET /api/sessions/{id}` | 查询会话详情 | Session | `session/handler_test.go` | |
-| 分析报告生成 | `POST /api/sessions/{id}/analyze` | 提取对话 → 构造分析 Prompt → LLM 分析 → JSON 解析 → MD 渲染 | AnalysisReport | 未实现 | 分析质量、JSON 解析失败 |
+| 分析报告生成 | `POST /api/sessions/{id}/analyze` | 校验会话状态 → 构造分析 Prompt → LLM 分析 → JSON 解析容错 → MD 渲染 → 持久化 | AnalysisReport | `analysis/handler_test.go` + `analysis/service_test.go` + `analysis/engine_test.go` | 分析质量、JSON 解析失败 |
+| 报告查询 | `GET /api/sessions/{id}/report` + `GET .../reports` | 查询最新/历史报告 | AnalysisReport | `analysis/handler_test.go` | |
+| 自动触发分析 | 会话结束回调 | OnSessionEndFunc → analysisSvc.TriggerAnalysis | AnalysisReport | `session/service_test.go` + `analysis/service_test.go` | 回调遗漏、自动触发失败 |
 | 模型配置切换 | 启动加载 | 配置文件 → Config 结构体 → LLM Client | LLMConfig | 启动测试 | 配置错误 |
 
 ## 3. 测试与验证入口
@@ -46,8 +48,8 @@ confidence: medium
 | 角色模块 | `go test ./internal/role/...` | 角色推荐链路 | handler + service + model | |
 | 会话模块 | `go test ./internal/session/...` | 会话生命周期 | handler + service | |
 | 记忆管理 | `go test ./internal/memory/...` | 滑动窗口+摘要 | manager | |
-| 持久化 | `go test ./internal/store/...` | session/message CRUD | SessionStore | |
-| 分析引擎 | `go test ./internal/analysis/...` | 分析逻辑 | 未实现 | |
+| 持久化 | `go test ./internal/store/...` | session/message/analysis CRUD | SessionStore + AnalysisStore | |
+| 分析引擎 | `go test ./internal/analysis/...` | Engine + Service + Handler | engine/service/handler | 95 tests total |
 | E2E 手工 | curl / 浏览器 | 全链路 | Phase 0 手工验证、Phase 1 浏览器验证 | |
 
 ## 4. 易错边界
@@ -65,16 +67,15 @@ confidence: medium
 
 | change_id | 影响模块 | 影响链路 | 关联验证 | 状态 |
 |-----------|----------|----------|----------|------|
-| 待创建 | - | - | - | - |
+| analysis-engine | analysis, store, session, config, cmd/server | 分析报告生成、报告查询、自动触发 | 95 tests, V1-V12 | done |
 
 ## 6. 待确认事项
 
 | 问题 | 影响范围 | 建议确认方式 | 优先级 |
 |------|----------|--------------|--------|
-| analysis 模块实现优先级与顺序 | 分析引擎 | 与用户确认 MVP 路线图中分析的位置 | P1 |
 | 会话状态迁移是否需集中校验 | session、store | 审查 `session/service.go` 状态变更路径 | P1 |
 | Go HTTP 路由库选择 | HTTP Server | 评估 `net/http` vs `chi` vs `gin` | P2 |
-| 前端框架选型 | Web 前端 | Phase 0 完成后再定 | P2 |
+| 前端框架选型 | Web 前端 | Phase 1 开始时决定 | P2 |
 | 项目仓库名称和位置 | 全项目 | 用户决定 | P1 |
 
 ## 更新规则

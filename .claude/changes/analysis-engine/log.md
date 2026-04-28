@@ -132,3 +132,32 @@
 - `go build ./...` → Success
 - `go test ./...` → 95 passed in 10 packages（新增 1 个 F1 guard 测试）
 - `go vet ./...` → No issues found
+
+## 2026-04-29 — cc-archive
+
+### 归档检查
+
+1. **review 存在且允许归档** — review.md verdict: pass ✅
+2. **spec.status = review → done** ✅
+3. **无 open Finding** — F1-F5 全部 fixed ✅
+4. **无 unexplained gap** — V1-V12 全部闭环 ✅
+5. **fresh verification evidence** — 95 tests pass, go vet clean, go build success ✅
+6. **knowledge 决策** — 沉淀 3 条知识 ✅
+
+### 知识沉淀
+
+1. **新建 `knowledge/analysis-patterns.md`**（3 条）：
+   - OnSessionEndFunc 回调解耦模式
+   - SQLite migration 双轨策略
+   - 报告双重格式（JSON + Markdown）
+
+2. **更新 `knowledge/llm-client-patterns.md`**（1 条）：
+   - 结构化 JSON 输出容错模式（callWithRetry + code fence stripping + 温度降低重试 + 截断日志）
+
+3. **更新 `knowledge/index.md`**：新增 4 条索引
+
+### 归档结论
+
+- spec.status → done
+- Phase 0 最后一个 change 归档完成，Talkent 已跑通"设定→对话→分析"完整链路
+- 待合并：feat/analysis-engine → main

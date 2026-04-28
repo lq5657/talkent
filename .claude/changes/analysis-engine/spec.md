@@ -1,6 +1,6 @@
 ---
 change_id: analysis-engine
-status: review
+status: done
 depends_on:
   - scaffold-project
   - llm-client
@@ -9,7 +9,7 @@ depends_on:
 parallel_safe: false
 branch: feat/analysis-engine
 created: 2026-04-27
-updated: 2026-04-27
+updated: 2026-04-29
 complexity: medium
 min_validation_level: L2
 ---
