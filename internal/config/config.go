@@ -9,15 +9,20 @@ import (
 )
 
 type Config struct {
-	Server  ServerConfig  `yaml:"server"`
-	Database DBConfig     `yaml:"database"`
-	Log     LogConfig     `yaml:"log"`
-	LLM     LLMConfig     `yaml:"llm"`
-	Session SessionConfig `yaml:"session"`
+	Server   ServerConfig   `yaml:"server"`
+	Database DBConfig       `yaml:"database"`
+	Log      LogConfig      `yaml:"log"`
+	LLM      LLMConfig      `yaml:"llm"`
+	Session  SessionConfig  `yaml:"session"`
+	Analysis AnalysisConfig `yaml:"analysis"`
 }
 
 type SessionConfig struct {
 	MemoryWindowSize int `yaml:"memory_window_size"`
+}
+
+type AnalysisConfig struct {
+	AutoTrigger bool `yaml:"auto_trigger"`
 }
 
 type ServerConfig struct {
@@ -59,6 +64,9 @@ func Load(path string) (*Config, error) {
 		},
 		Session: SessionConfig{
 			MemoryWindowSize: 10,
+		},
+		Analysis: AnalysisConfig{
+			AutoTrigger: true,
 		},
 	}
 
@@ -103,6 +111,9 @@ func applyEnvOverrides(cfg *Config) {
 	}
 	if v := os.Getenv("TALKENT_LLM_MODEL"); v != "" {
 		cfg.LLM.Model = v
+	}
+	if v := os.Getenv("TALKENT_ANALYSIS_AUTO_TRIGGER"); v != "" {
+		cfg.Analysis.AutoTrigger = v == "true" || v == "1"
 	}
 	if v := os.Getenv("TALKENT_SESSION_MEMORY_WINDOW_SIZE"); v != "" {
 		fmt.Sscanf(v, "%d", &cfg.Session.MemoryWindowSize)

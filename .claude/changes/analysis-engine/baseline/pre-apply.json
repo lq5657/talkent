@@ -1,0 +1,7 @@
+{
+  "change_id": "analysis-engine",
+  "captured_at": "2026-04-28",
+  "build": "success",
+  "tests": "70 passed in 9 packages",
+  "packages": ["cmd/server", "internal/config", "internal/llm", "internal/log", "internal/memory", "internal/role", "internal/server", "internal/session", "internal/store"]
+}

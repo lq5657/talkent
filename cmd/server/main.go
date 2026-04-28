@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log/slog"
 	"net/http"
+	"context"
 	"os"
 
 	"github.com/lq5657/talkent/internal/config"
@@ -13,6 +14,7 @@ import (
 	"github.com/lq5657/talkent/internal/role"
 	"github.com/lq5657/talkent/internal/server"
 	"github.com/lq5657/talkent/internal/session"
+	"github.com/lq5657/talkent/internal/analysis"
 	"github.com/lq5657/talkent/internal/store"
 )
 
@@ -53,9 +55,23 @@ func main() {
 	sessionSvc := session.NewService(sessionStore, memoryManager, llmClient, logger)
 	sessionHandler := session.NewHandler(sessionSvc, logger)
 
+	analysisStore := store.NewAnalysisStore(db)
+	analysisEngine := analysis.NewEngine(llmClient, logger)
+	analysisSvc := analysis.NewService(analysisStore, analysisEngine, sessionStore, logger)
+	analysisHandler := analysis.NewHandler(analysisSvc, logger)
+
+	if cfg.Analysis.AutoTrigger {
+		sessionSvc.OnSessionEnd = func(ctx context.Context, sessionID string) {
+			if _, _, err := analysisSvc.TriggerAnalysis(ctx, sessionID, "auto"); err != nil {
+				logger.Warn("auto analysis failed", "session_id", sessionID, "error", err)
+			}
+		}
+	}
+
 	srv := server.New(cfg, db, logger, func(mux *http.ServeMux) {
 		roleHandler.RegisterRoutes(mux)
 		sessionHandler.RegisterRoutes(mux)
+		analysisHandler.RegisterRoutes(mux)
 	})
 
 	if err := server.Run(srv, logger); err != nil {

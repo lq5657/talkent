@@ -26,6 +26,8 @@ CREATE TABLE IF NOT EXISTS analysis_reports (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     session_id TEXT NOT NULL,
     dimension_results TEXT NOT NULL DEFAULT '[]',
+    markdown_content TEXT NOT NULL DEFAULT '',
+    model_used TEXT NOT NULL DEFAULT '',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (session_id) REFERENCES sessions(id)
 );

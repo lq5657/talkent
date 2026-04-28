@@ -4,8 +4,8 @@
 它不是 `spec.md` / `tasks.md` 的替代品；真实需求、验收和证据仍以单个 `changes/<change-id>/` 为准。
 
 ```text
-last_updated: 2026-04-27
-updated_by: cc-archive
+last_updated: 2026-04-28
+updated_by: cc-apply
 ```
 
 ## 1. 正式 Change
@@ -16,6 +16,7 @@ updated_by: cc-archive
 | llm-client | done | cc-archive | LLM 客户端抽象：go-openai SDK、单活跃 provider、错误重试 | internal/llm, cmd/server | scaffold-project(done) | - | review PASSED, F4 fixed, 21 tests, 已归档 |
 | role-and-goal | done | cc-archive | 角色设定→目标推荐→维度确定的推导链路 | internal/role, internal/server, cmd/server | scaffold-project(done), llm-client(done) | - | review PASSED, 0C/0I/2Minor, 已归档, knowledge沉淀3条 |
 | chat-session | done | cc-archive | 对话会话生命周期：创建、对话、记忆管理、结束 | internal/{session,memory,store}, cmd/server, internal/config | scaffold-project(done), llm-client(done), role-and-goal(done) | - | review PASSED, 0C/0I(2fixed)/0M(2fixed+1accepted), 23 tests, knowledge沉淀4条, 已归档 |
+| analysis-engine | review | cc-apply | 多维度分析引擎：结构化分析+JSON解析容错+Markdown报告+自动触发 | internal/{analysis,store,session}, cmd/server, internal/config | scaffold-project(done), llm-client(done), role-and-goal(done), chat-session(done) | cc-review analysis-engine | T1-T4 done, 94 tests pass, V1-V12 apply-covered |
 
 ## 2. Backlog 候选
 

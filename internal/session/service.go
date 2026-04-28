@@ -15,11 +15,14 @@ import (
 	"github.com/lq5657/talkent/internal/store"
 )
 
+type OnSessionEndFunc func(ctx context.Context, sessionID string)
+
 type Service struct {
-	store     *store.SessionStore
-	memory    *memory.Manager
-	llmClient llm.Client
-	logger    *slog.Logger
+	store        *store.SessionStore
+	memory       *memory.Manager
+	llmClient    llm.Client
+	logger       *slog.Logger
+	OnSessionEnd OnSessionEndFunc
 }
 
 func NewService(s *store.SessionStore, m *memory.Manager, llmClient llm.Client, logger *slog.Logger) *Service {
@@ -211,6 +214,7 @@ func (s *Service) EndSession(ctx context.Context, sessionID string) (*EndSession
 	}
 
 	s.logger.Info("session ended manually", "session_id", sessionID, "final_round", msgCount/2, "trigger", "manual")
+	s.notifySessionEnd(sessionID)
 	return &EndSessionResult{
 		SessionID:  sessionID,
 		Status:     "completed",
@@ -257,6 +261,13 @@ func (s *Service) GetSessionDetail(ctx context.Context, sessionID string) (*Sess
 		MessageCount:    msgCount,
 		CreatedAt:       sess.CreatedAt,
 	}, nil
+}
+
+func (s *Service) notifySessionEnd(sessionID string) {
+	if s.OnSessionEnd != nil {
+		ctx := context.Background()
+		s.OnSessionEnd(ctx, sessionID)
+	}
 }
 
 func (s *Service) parseSessionConfig(sess *store.Session) (roleConfigJSON, []role.TrainingGoal, []role.Dimension, error) {
