@@ -243,3 +243,36 @@ func TestGetSession_NotFound(t *testing.T) {
 	}
 }
 
+func TestChat_AutoEndNotifiesOnSessionEnd(t *testing.T) {
+	s := setupTestStore(t)
+	mock := &mockClient{response: "回复"}
+	mgr := memory.NewManager(10, mock, testLogger)
+	svc := NewService(s, mgr, mock, testLogger)
+
+	var hookCalled bool
+	var hookSessionID string
+	svc.OnSessionEnd = func(_ context.Context, sessionID string) {
+		hookCalled = true
+		hookSessionID = sessionID
+	}
+
+	sess, _ := svc.CreateSession(context.Background(), CreateSessionRequest{
+		RoleDescription: "面试者",
+		RoundLimit:      1,
+	})
+
+	r, err := svc.Chat(context.Background(), sess.ID, "msg")
+	if err != nil {
+		t.Fatalf("Chat: %v", err)
+	}
+	if !r.IsLast {
+		t.Fatal("expected IsLast=true when round limit reached")
+	}
+	if !hookCalled {
+		t.Error("OnSessionEnd hook was not called when session auto-ended via Chat")
+	}
+	if hookSessionID != sess.ID {
+		t.Errorf("hook sessionID = %q, want %q", hookSessionID, sess.ID)
+	}
+}
+

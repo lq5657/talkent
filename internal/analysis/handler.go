@@ -134,7 +134,9 @@ func (h *Handler) handleListReports(w http.ResponseWriter, r *http.Request) {
 func reportToResponse(r *store.AnalysisReport) reportResponse {
 	var dims []dimensionResponse
 	if r.DimensionResults != "" {
-		json.Unmarshal([]byte(r.DimensionResults), &dims)
+		if err := json.Unmarshal([]byte(r.DimensionResults), &dims); err != nil {
+			dims = nil
+		}
 	}
 	return reportResponse{
 		ReportID:  r.ID,

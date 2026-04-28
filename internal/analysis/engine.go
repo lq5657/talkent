@@ -38,27 +38,22 @@ func NewEngine(llmClient llm.Client, logger *slog.Logger) *Engine {
 	}
 }
 
-func (e *Engine) Analyze(ctx context.Context, roleDesc, scenario string, messages []store.Message, dimensions []role.Dimension) (*AnalysisResult, error) {
+func (e *Engine) Analyze(ctx context.Context, sessionID, roleDesc, scenario string, messages []store.Message, dimensions []role.Dimension) (*AnalysisResult, error) {
 	prompt := e.buildPrompt(roleDesc, scenario, messages, dimensions)
 
-	resp, err := e.callWithRetry(ctx, prompt)
+	results, model, err := e.callWithRetry(ctx, prompt)
 	if err != nil {
 		return nil, fmt.Errorf("llm analysis: %w", err)
 	}
 
-	e.logger.Info("analysis completed", "model", resp.Model, "dimension_count", len(dimensions))
-
-	results, err := e.parseDimensionResults(resp.Content)
-	if err != nil {
-		return nil, err
-	}
+	e.logger.Info("analysis completed", "session_id", sessionID, "model", model, "dimension_count", len(results))
 
 	markdown := e.renderMarkdown(roleDesc, scenario, results)
 
 	return &AnalysisResult{
 		DimensionResults: results,
 		Markdown:         markdown,
-		ModelUsed:        resp.Model,
+		ModelUsed:        model,
 	}, nil
 }
 
@@ -144,14 +139,14 @@ func (e *Engine) parseDimensionResults(content string) ([]DimensionResult, error
 	return resp.Dimensions, nil
 }
 
-func (e *Engine) callWithRetry(ctx context.Context, messages []llm.ChatMessage) (*llm.ChatResponse, error) {
+func (e *Engine) callWithRetry(ctx context.Context, messages []llm.ChatMessage) ([]DimensionResult, string, error) {
 	resp, err := e.llmClient.Chat(ctx, messages, &llm.ChatOptions{Temperature: 0.3})
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	// Try parsing; on failure, retry once with stronger format instruction
-	if _, parseErr := e.parseDimensionResults(resp.Content); parseErr != nil {
+	results, parseErr := e.parseDimensionResults(resp.Content)
+	if parseErr != nil {
 		e.logger.Warn("analysis json parse failed, retrying", "error", parseErr)
 
 		retryMsgs := append(messages, llm.ChatMessage{
@@ -164,20 +159,21 @@ func (e *Engine) callWithRetry(ctx context.Context, messages []llm.ChatMessage) 
 
 		resp, err = e.llmClient.Chat(ctx, retryMsgs, &llm.ChatOptions{Temperature: 0.1})
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 
-		if _, parseErr = e.parseDimensionResults(resp.Content); parseErr != nil {
+		results, parseErr = e.parseDimensionResults(resp.Content)
+		if parseErr != nil {
 			truncated := resp.Content
 			if len(truncated) > 500 {
 				truncated = truncated[:500] + "..."
 			}
 			e.logger.Error("analysis json parse failed after retry", "raw_output", truncated)
-			return nil, fmt.Errorf("analysis json parse failed after retry: %w", parseErr)
+			return nil, "", fmt.Errorf("analysis json parse failed after retry: %w", parseErr)
 		}
 	}
 
-	return resp, nil
+	return results, resp.Model, nil
 }
 
 func (e *Engine) renderMarkdown(roleDesc, scenario string, results []DimensionResult) string {

@@ -3,6 +3,7 @@ package store
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 
 	_ "modernc.org/sqlite"
 )
@@ -37,7 +38,15 @@ func runMigrations(db *sql.DB) error {
 		`ALTER TABLE analysis_reports ADD COLUMN model_used TEXT NOT NULL DEFAULT ''`,
 	}
 	for _, m := range migrations {
-		_, _ = db.Exec(m)
+		_, err := db.Exec(m)
+		if err != nil && !isDuplicateColumnError(err) {
+			return fmt.Errorf("migration %q: %w", m, err)
+		}
 	}
 	return nil
+}
+
+func isDuplicateColumnError(err error) bool {
+	msg := err.Error()
+	return strings.Contains(msg, "duplicate column") || strings.Contains(msg, "already exists")
 }

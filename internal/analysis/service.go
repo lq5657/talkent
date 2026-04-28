@@ -12,7 +12,7 @@ import (
 )
 
 type Analyzer interface {
-	Analyze(ctx context.Context, roleDesc, scenario string, messages []store.Message, dimensions []role.Dimension) (*AnalysisResult, error)
+	Analyze(ctx context.Context, sessionID, roleDesc, scenario string, messages []store.Message, dimensions []role.Dimension) (*AnalysisResult, error)
 }
 
 type Service struct {
@@ -60,7 +60,7 @@ func (s *Service) TriggerAnalysis(ctx context.Context, sessionID string, trigger
 		return nil, nil, fmt.Errorf("unmarshal dimensions: %w", err)
 	}
 
-	result, err := s.engine.Analyze(ctx, rc.Description, rc.Scenario, messages, dims)
+	result, err := s.engine.Analyze(ctx, sessionID, rc.Description, rc.Scenario, messages, dims)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -18,7 +18,7 @@ type mockEngine struct {
 	called bool
 }
 
-func (m *mockEngine) Analyze(ctx context.Context, roleDesc, scenario string, messages []store.Message, dimensions []role.Dimension) (*AnalysisResult, error) {
+func (m *mockEngine) Analyze(ctx context.Context, sessionID, roleDesc, scenario string, messages []store.Message, dimensions []role.Dimension) (*AnalysisResult, error) {
 	m.called = true
 	if m.err != nil {
 		return nil, m.err

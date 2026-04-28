@@ -96,3 +96,39 @@
 - `go test ./...` → 94 passed in 10 packages
 - `go vet ./...` → No issues found
 - V1-V12 全部 apply-covered
+
+## 2026-04-29 — cc-fix
+
+### Finding 修复记录
+
+1. **F1 (Critical)**：Chat 自动结束路径遗漏 `notifySessionEnd`
+   - 症状：`session.Service.Chat()` 在 `isLast == true` 时未调用 `s.notifySessionEnd(sessionID)`
+   - 根因：实现时遗漏对 Chat 自动结束分支的回调调用（EndSession 方法正确调用了）
+   - 修复：在 Chat 方法的 `if isLast { ... }` 分支内添加 `s.notifySessionEnd(sessionID)`
+   - Guard：新增 `TestChat_AutoEndNotifiesOnSessionEnd` 测试
+
+2. **F2 (Minor)**：callWithRetry + Analyze 冗余 JSON 解析
+   - 修复：将 `callWithRetry` 返回类型从 `(*llm.ChatResponse, error)` 改为 `([]DimensionResult, string, error)`，直接返回解析结果和模型名，`Analyze` 不再重复解析
+
+3. **F3 (Minor)**：reportToResponse 中 json.Unmarshal 错误被静默忽略
+   - 修复：添加 `if err := json.Unmarshal(...); err != nil { dims = nil }`，非法 JSON 时返回空维度而非静默吞错
+
+4. **F4 (Minor)**：runMigrations 对所有 ALTER TABLE 错误一律静默
+   - 修复：新增 `isDuplicateColumnError` 函数检查 "duplicate column" 或 "already exists"，非预期错误向上返回
+
+5. **F5 (Minor)**：Engine 日志缺 session_id
+   - 修复：`Analyze` 方法新增 `sessionID` 参数，日志补充 `"session_id"` 字段；`Analyzer` 接口同步更新；所有 mock 和测试适配新签名
+
+### 触发专题规则
+
+- `rules/verification.md`：F1 修复后必须获得 fresh evidence ✅
+- `rules/debugging-workflow.md`：每个 Finding 按 symptom→failure point→root cause→minimal fix→guard→verification 记录 ✅
+- `rules/observability.md`：F5 涉及可观测性缺失修复 ✅
+- `rules/database-changes.md`：F4 涉及 migration 错误处理改进 ✅
+- 未触发：api-compatibility（无对外 API 变更）、configuration（无配置变更）、security（无安全边界变更）、testing-strategy（测试等级不变）、release（无发布变更）、source-driven-development（无外部依赖变更）、git-workflow（在同一分支继续修复）
+
+### 验证证据
+
+- `go build ./...` → Success
+- `go test ./...` → 95 passed in 10 packages（新增 1 个 F1 guard 测试）
+- `go vet ./...` → No issues found

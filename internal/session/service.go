@@ -178,6 +178,7 @@ func (s *Service) Chat(ctx context.Context, sessionID string, userContent string
 			return nil, fmt.Errorf("auto end session: %w", err)
 		}
 		s.logger.Info("session auto-ended", "session_id", sessionID, "final_round", currentRound, "trigger", "auto")
+		s.notifySessionEnd(sessionID)
 	}
 
 	s.logger.Info("chat round completed", "session_id", sessionID, "round", currentRound, "memory_source", ctxResult.MemorySource)
