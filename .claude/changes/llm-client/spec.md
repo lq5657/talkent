@@ -1,6 +1,6 @@
 ---
 change_id: llm-client
-status: review
+status: done
 depends_on:
   - scaffold-project
 parallel_safe: true
