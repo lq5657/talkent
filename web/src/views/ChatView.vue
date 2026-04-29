@@ -19,6 +19,7 @@ const inputText = ref('')
 const sending = ref(false)
 const ending = ref(false)
 const error = ref('')
+const autoEndNotice = ref('')
 const roundCurrent = ref(0)
 const roundLimit = ref(0)
 const messagesContainer = ref<HTMLElement | null>(null)
@@ -35,6 +36,7 @@ async function sendMessage() {
   if (!content || sending.value) return
 
   error.value = ''
+  autoEndNotice.value = ''
   messages.value.push({ role: 'user', content })
   inputText.value = ''
   sending.value = true
@@ -48,7 +50,12 @@ async function sendMessage() {
     await scrollToBottom()
 
     if (res.round_info.is_last) {
-      await endSession()
+      autoEndNotice.value = '对话轮数已达上限，正在结束对话...'
+      sending.value = false
+      setTimeout(async () => {
+        await endSession()
+      }, 1500)
+      return
     }
   } catch (e) {
     error.value = e instanceof Error ? e.message : '发送消息失败'
@@ -86,17 +93,25 @@ onMounted(async () => {
       <h1 class="text-base md:text-lg font-semibold text-gray-800 truncate">对话训练</h1>
       <div class="flex items-center gap-2 md:gap-3 shrink-0">
         <span v-if="roundLimit > 0" class="text-xs md:text-sm text-gray-500">
-          {{ roundCurrent }} / {{ roundLimit }}
+          第 {{ roundCurrent }} / {{ roundLimit }} 轮
         </span>
         <button
           class="px-3 py-1.5 text-xs md:text-sm bg-red-50 text-red-600 rounded-lg hover:bg-red-100 disabled:opacity-50"
           :disabled="ending || sending"
           @click="endSession"
         >
-          {{ ending ? '结束中...' : '结束' }}
+          {{ ending ? '结束中...' : '结束对话' }}
         </button>
       </div>
     </header>
+
+    <!-- Auto-end notice -->
+    <div
+      v-if="autoEndNotice"
+      class="shrink-0 mx-4 mt-2 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-sm"
+    >
+      {{ autoEndNotice }}
+    </div>
 
     <!-- Error -->
     <div
@@ -131,7 +146,7 @@ onMounted(async () => {
     <div class="shrink-0 px-4 py-3 bg-white border-t border-gray-200">
       <ChatInput
         v-model="inputText"
-        :disabled="sending || ending"
+        :disabled="sending || ending || !!autoEndNotice"
         @send="sendMessage"
       />
     </div>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { api, type ReportResponse, type ReportSummary } from '../api/client'
+import { api, ApiError, type ReportResponse, type ReportSummary } from '../api/client'
 import DimensionCard from '../components/DimensionCard.vue'
 import MarkdownRenderer from '../components/MarkdownRenderer.vue'
 
@@ -13,15 +13,22 @@ const historyReports = ref<ReportSummary[]>([])
 const loading = ref(true)
 const analyzing = ref(false)
 const error = ref('')
+const noReportYet = ref(false)
 
 async function loadReport() {
   loading.value = true
   error.value = ''
+  noReportYet.value = false
   try {
     report.value = await api.getReport(sessionId)
   } catch (e) {
-    // 404 means no report yet — show generate button
-    report.value = null
+    if (e instanceof ApiError && e.status === 404) {
+      report.value = null
+      noReportYet.value = true
+    } else {
+      error.value = e instanceof Error ? e.message : '加载报告失败'
+      report.value = null
+    }
   } finally {
     loading.value = false
   }
@@ -41,6 +48,8 @@ async function triggerAnalysis() {
   try {
     const res = await api.analyze(sessionId)
     report.value = res
+    noReportYet.value = false
+    await loadHistory()
   } catch (e) {
     error.value = e instanceof Error ? e.message : '生成分析失败'
   } finally {
@@ -71,7 +80,7 @@ onMounted(() => {
       <div v-if="loading" class="text-gray-500 text-sm">加载报告中...</div>
 
       <!-- No report — generate button -->
-      <div v-else-if="!report" class="text-center py-12 space-y-4">
+      <div v-else-if="noReportYet && !report" class="text-center py-12 space-y-4">
         <p class="text-gray-500">对话已结束，尚未生成分析报告</p>
         <button
           class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium"
@@ -83,7 +92,7 @@ onMounted(() => {
       </div>
 
       <!-- Report content -->
-      <template v-else>
+      <template v-else-if="report">
         <!-- Dimension cards -->
         <section v-if="report.dimensions.length > 0" class="space-y-4">
           <h2 class="text-lg font-semibold text-gray-700">维度分析</h2>
@@ -117,8 +126,9 @@ onMounted(() => {
           <div
             v-for="hr in historyReports"
             :key="hr.report_id"
-            class="flex items-center justify-between p-3 rounded-lg border border-gray-200 bg-white"
+            class="flex items-center justify-between p-3 rounded-lg border border-gray-200 bg-white cursor-pointer hover:bg-gray-50"
             :class="report && hr.report_id === report.report_id ? 'ring-2 ring-blue-500' : ''"
+            @click="loadReport"
           >
             <div class="text-sm text-gray-600">
               报告 #{{ hr.report_id }} · {{ hr.model_used }}

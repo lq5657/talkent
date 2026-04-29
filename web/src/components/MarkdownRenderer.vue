@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 import hljs from 'highlight.js'
 
 marked.use({
@@ -20,7 +21,8 @@ const props = defineProps<{
 }>()
 
 const rendered = computed(() => {
-  return marked.parse(props.content) as string
+  const raw = marked.parse(props.content) as string
+  return DOMPurify.sanitize(raw)
 })
 </script>
 

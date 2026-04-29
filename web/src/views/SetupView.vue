@@ -20,6 +20,10 @@ const goalsLoading = ref(false)
 const dimsLoading = ref(false)
 const creating = ref(false)
 const error = ref('')
+const dimsWarning = ref('')
+
+const ROLE_TYPE_CUSTOM = 'custom'
+const DIMENSION_MODE_DERIVE = 'derive'
 
 // Recommend goals when role description is submitted
 async function recommendGoals() {
@@ -28,6 +32,7 @@ async function recommendGoals() {
     return
   }
   error.value = ''
+  dimsWarning.value = ''
   goalsLoading.value = true
   recommendedGoals.value = []
   selectedGoals.value = []
@@ -42,27 +47,33 @@ async function recommendGoals() {
   }
 }
 
-// Recommend dimensions when goals change
+// Recommend dimensions when goals change (with debounce)
+let dimsTimer: ReturnType<typeof setTimeout> | null = null
 watch(selectedGoals, async (goals) => {
+  if (dimsTimer) clearTimeout(dimsTimer)
   if (goals.length === 0) {
     selectedDimensions.value = []
+    dimsWarning.value = ''
     return
   }
   dimsLoading.value = true
   selectedDimensions.value = []
-  try {
-    const res = await api.recommendDimensions({
-      role_type: 'custom',
-      goals,
-      mode: 'derive',
-      role_desc: roleDescription.value.trim(),
-    })
-    selectedDimensions.value = res.dimensions
-  } catch {
-    // silently fail — user can still proceed without dimensions
-  } finally {
-    dimsLoading.value = false
-  }
+  dimsWarning.value = ''
+  dimsTimer = setTimeout(async () => {
+    try {
+      const res = await api.recommendDimensions({
+        role_type: ROLE_TYPE_CUSTOM,
+        goals,
+        mode: DIMENSION_MODE_DERIVE,
+        role_desc: roleDescription.value.trim(),
+      })
+      selectedDimensions.value = res.dimensions
+    } catch {
+      dimsWarning.value = '维度推荐失败，您可以继续对话但将缺少维度分析'
+    } finally {
+      dimsLoading.value = false
+    }
+  }, 300)
 })
 
 // Create session and navigate to chat
@@ -77,7 +88,7 @@ async function createSession() {
     const res = await api.createSession({
       role_description: roleDescription.value.trim(),
       scenario: scenario.value.trim(),
-      role_type: 'custom',
+      role_type: ROLE_TYPE_CUSTOM,
       goals: selectedGoals.value,
       dimensions: selectedDimensions.value,
       round_limit: roundLimit.value,
@@ -102,6 +113,14 @@ async function createSession() {
         class="p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm"
       >
         {{ error }}
+      </div>
+
+      <!-- Dimension recommendation warning -->
+      <div
+        v-if="dimsWarning"
+        class="p-4 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-sm"
+      >
+        {{ dimsWarning }}
       </div>
 
       <!-- Step 1: Role & Scenario -->

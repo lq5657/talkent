@@ -90,3 +90,8 @@
 * **SQLite migration双轨** : CREATE TABLE 包含所有列 + ALTER TABLE for 旧库 + isDuplicateColumnError 区分可忽略错误与真实失败；新列必须有 NOT NULL DEFAULT → `knowledge/analysis-patterns.md`
 * **LLM JSON容错** : 结构化 Prompt + code fence stripping + callWithRetry（一次重试 + 温度降低 + 截断日志） + 直接返回解析结果避免冗余 → `knowledge/llm-client-patterns.md`
 * **报告双重格式** : analysis_reports 同时存 dimension_results(JSON) + markdown_content(Markdown)，Handler 反序列化错误时设 nil 而非静默吞错 → `knowledge/analysis-patterns.md`
+* **Tailwind v4 Vite集成** : v4 无需 tailwind.config.js，使用 @tailwindcss/vite 插件 + `@import "tailwindcss"` → `knowledge/web-frontend-patterns.md`
+* **marked v15代码高亮** : marked.use({ renderer: { code } }) 替代已移除的 setOptions({ highlight }) → `knowledge/web-frontend-patterns.md`
+* **v-html XSS防护** : marked v15 无内置 sanitize，DOMPurify.sanitize() 是 v-html 渲染 Markdown 的强制红线 → `knowledge/web-frontend-patterns.md`
+* **CORS中间件最佳实践** : Allow-Methods/Headers 仅对允许源设置 + Max-Age:86400 减少预检 + Vite 代理免 CORS → `knowledge/web-frontend-patterns.md`
+* **highlight.js分包** : manualChunks 拆分 970KB 包为按需加载 chunk，避免首屏影响 → `knowledge/web-frontend-patterns.md`

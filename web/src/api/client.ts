@@ -24,12 +24,19 @@ async function apiRequest<T>(
   }
 
   const res = await fetch(`${API_BASE}${path}`, opts)
-  const data = await res.json()
 
   if (!res.ok) {
-    throw new ApiError(data.error ?? `request failed: ${res.status}`, res.status)
+    let message = '请求失败，请稍后重试'
+    try {
+      const data = await res.json()
+      if (data.error) message = data.error
+    } catch {
+      // response body not JSON — use fallback message
+    }
+    throw new ApiError(message, res.status)
   }
 
+  const data = await res.json()
   return data as T
 }
 

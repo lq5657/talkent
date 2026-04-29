@@ -1,6 +1,6 @@
 ---
 change_id: web-frontend
-status: review
+status: done
 depends_on:
   - scaffold-project
   - llm-client

@@ -46,3 +46,63 @@
 
 - marked v15 的 `setOptions({ highlight })` 不再支持，需改用 `marked.use({ renderer: { code } })`
 - DimensionList.vue 初版使用了 `props.xxx` 但未赋值 `const props = defineProps()`，导致 TS 报错
+
+## 2026-04-30 — cc-fix
+
+### 修复记录
+
+| Finding | 严重度 | 修复内容 | 修改文件 |
+|---------|--------|----------|----------|
+| F1 | Minor | 轮数显示改为"第 N / M 轮" | ChatView.vue |
+| F2 | Minor | 按钮文本改为"结束对话"/"结束中..." | ChatView.vue |
+| F3 | Important | 自动结束前显示 1.5s 琥珀色提示"对话轮数已达上限，正在结束对话..." | ChatView.vue |
+| F4 | Important | 历史报告列表添加点击事件和 hover 样式 | ReportView.vue |
+| F5 | Important | 维度推荐失败显示琥珀色警告 banner | SetupView.vue |
+| F6 | Critical | MarkdownRenderer 引入 DOMPurify 对 v-html 做消毒 | MarkdownRenderer.vue, package.json |
+| F7 | Important | API 客户端先检查 res.ok 再解析 JSON，错误 JSON 解析包 try/catch | client.ts |
+| F8 | Important | 区分 404（无报告）和其他错误（显示错误信息） | ReportView.vue |
+| F9 | Minor | CORS Allow-Methods/Allow-Headers 移入允许源 if 分支 | server.go |
+| F10 | Minor | 添加 Access-Control-Max-Age: 86400 | server.go |
+| F11 | Minor | 提取 ROLE_TYPE_CUSTOM 和 DIMENSION_MODE_DERIVE 常量 | SetupView.vue |
+| F12 | Important | 维度推荐 watcher 添加 300ms 防抖 | SetupView.vue |
+| F13 | Minor | fallback 错误消息改为"请求失败，请稍后重试" | client.ts |
+
+### 验证证据
+
+| 验证项 | 结果 |
+|--------|------|
+| vue-tsc -b | 通过（无类型错误） |
+| vite build | 通过（8 chunks 生成，1.53s） |
+| go build ./... | 通过 |
+
+### 修复决策
+
+| 决策 | 选择 | 原因 |
+|------|------|------|
+| 自动结束提示方式 | inline amber message + setTimeout(1500) | 比 toast 简单，无需引入额外组件，1.5s 足够用户看到最后一条回复 |
+| 维度推荐防抖 | setTimeout 300ms | 比 AbortController 简单，MVP 阶段够用 |
+| XSS 防护 | DOMPurify | marked v15 已移除内置 sanitize，DOMPurify 是业界标准方案 |
+| CORS Max-Age | 86400（24h） | 开发环境预检缓存，减少 OPTIONS 请求 |
+
+## 2026-04-30 — cc-archive
+
+### 归档记录
+
+- **归档时间**: 2026-04-30
+- **spec.status**: review → done
+- **review 结论**: PASSED（13 findings 全部 fixed）
+- **验证证据**: vue-tsc 通过, vite build 通过（1.50s, 8 chunks）, go build 通过, go test 95 passed
+
+### 知识沉淀
+
+| 知识项 | 分类 | 写入位置 |
+|--------|------|----------|
+| Tailwind CSS v4 Vite 集成模式 | 技术约定 | knowledge/web-frontend-patterns.md |
+| marked v15 代码高亮模式 | 踩坑记录 | knowledge/web-frontend-patterns.md |
+| v-html XSS 防护（DOMPurify） | 安全红线 | knowledge/web-frontend-patterns.md |
+| CORS 中间件最佳实践 | 技术约定 | knowledge/web-frontend-patterns.md |
+| highlight.js 分包策略 | 技术约定 | knowledge/web-frontend-patterns.md |
+
+### 归档结论
+
+web-frontend change 归档完成。三页面 SPA（设定→对话→报告）闭环实现，13 个 review findings 全部修复，知识沉淀 5 条。
