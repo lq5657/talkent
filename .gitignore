@@ -3,3 +3,7 @@
 talkent.db
 *.log
 config.yaml
+
+# Web frontend
+web/node_modules/
+web/dist/
