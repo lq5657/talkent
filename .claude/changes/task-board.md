@@ -17,7 +17,7 @@ updated_by: cc-apply
 | role-and-goal | done | cc-archive | 角色设定→目标推荐→维度确定的推导链路 | internal/role, internal/server, cmd/server | scaffold-project(done), llm-client(done) | - | review PASSED, 0C/0I/2Minor, 已归档, knowledge沉淀3条 |
 | chat-session | done | cc-archive | 对话会话生命周期：创建、对话、记忆管理、结束 | internal/{session,memory,store}, cmd/server, internal/config | scaffold-project(done), llm-client(done), role-and-goal(done) | - | review PASSED, 0C/0I(2fixed)/0M(2fixed+1accepted), 23 tests, knowledge沉淀4条, 已归档 |
 | analysis-engine | done | cc-archive | 多维度分析引擎：结构化分析+JSON解析容错+Markdown报告+自动触发 | internal/{analysis,store,session}, cmd/server, internal/config | scaffold-project(done), llm-client(done), role-and-goal(done), chat-session(done) | - | review PASSED, F1-F5 fixed, 95 tests, knowledge沉淀4条, 已归档 |
-| web-frontend | review | cc-apply | 三页面 Web SPA：设定页+对话页+报告页，Vue 3 + Tailwind | web/, internal/server | Phase 0 全部 done | cc-review web-frontend | 7 tasks done, vue-tsc+vite build+go test 95 passed, CORS 验证通过 |
+| web-frontend | review | cc-apply | 三页面 Web SPA：设定页+对话页+报告页，Vue 3 + Tailwind | web/, internal/server | Phase 0 全部 done | cc-fix web-frontend | review BLOCKED: 1C+6I+6M findings, F6 XSS Critical |
 
 ## 2. Backlog 候选
 
