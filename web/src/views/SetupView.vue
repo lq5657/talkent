@@ -28,7 +28,7 @@ const DIMENSION_MODE_DERIVE = 'derive'
 // Recommend goals when role description is submitted
 async function recommendGoals() {
   if (!roleDescription.value.trim()) {
-    error.value = '请输入角色描述'
+    error.value = '请输入对话者角色'
     return
   }
   error.value = ''
@@ -125,22 +125,22 @@ async function createSession() {
 
       <!-- Step 1: Role & Scenario -->
       <section class="space-y-4">
-        <h2 class="text-lg font-semibold text-gray-700">第一步：设定角色与场景</h2>
+        <h2 class="text-lg font-semibold text-gray-700">第一步：设定对话者与场景</h2>
         <div>
-          <label class="block text-sm font-medium text-gray-600 mb-1">角色描述</label>
+          <label class="block text-sm font-medium text-gray-600 mb-1">对话者角色</label>
           <textarea
             v-model="roleDescription"
             rows="3"
-            placeholder="例如：一位严厉但关心学生的大学教授"
+            placeholder="例如：一位资深技术面试官、一个难缠的客户、一位严厉但关心学生的大学教授"
             class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-600 mb-1">场景描述（可选）</label>
+          <label class="block text-sm font-medium text-gray-600 mb-1">场景描述（你的身份和情境）</label>
           <textarea
             v-model="scenario"
             rows="2"
-            placeholder="例如：在办公室讨论论文选题"
+            placeholder="例如：我是一名初级程序员，正在参加技术面试"
             class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>

@@ -21,7 +21,7 @@ func NewService(llmClient llm.Client, logger *slog.Logger) *Service {
 	}
 }
 
-const recommendGoalsSystemPrompt = `你是一位训练目标推荐专家。根据用户提供的角色描述，推荐适合该角色的训练目标。
+const recommendGoalsSystemPrompt = `你是一位训练目标推荐专家。根据用户提供的对话者角色描述，推荐适合用户的训练目标，帮助用户在与该对话者交流时提升应对和表达能力。
 你必须严格以 JSON 格式输出，不要输出任何其他内容。格式如下：
 {"goals": [{"name": "目标名称", "description": "目标描述"}]}`
 
@@ -36,7 +36,7 @@ func (s *Service) RecommendGoals(ctx context.Context, roleDesc string) ([]Traini
 }
 
 func (s *Service) generateGoals(ctx context.Context, roleDesc string) ([]TrainingGoal, error) {
-	userPrompt := fmt.Sprintf("请为以下角色描述推荐 3-5 个训练目标：\n%s", roleDesc)
+	userPrompt := fmt.Sprintf("对话者角色描述：%s\n请推荐 3-5 个训练目标，帮助用户在与该对话者交流时提升表达能力。", roleDesc)
 
 	messages := []llm.ChatMessage{
 		{Role: llm.RoleSystem, Content: recommendGoalsSystemPrompt},
@@ -70,7 +70,7 @@ func (s *Service) RecommendDimensions(ctx context.Context, roleType RoleType, go
 	return nil, fmt.Errorf("no dimensions found for role type %q, use DeriveDimensions instead", roleType)
 }
 
-const deriveDimensionsSystemPrompt = `你是一位分析维度设计专家。根据用户提供的角色描述和训练目标，推导适合的分析维度。
+const deriveDimensionsSystemPrompt = `你是一位分析维度设计专家。根据对话者角色描述和训练目标，推导适合的分析维度，用于评估用户在与该对话者交流时的表现。
 你必须严格以 JSON 格式输出，不要输出任何其他内容。格式如下：
 {"dimensions": [{"name": "维度名称", "description": "维度描述"}]}`
 
@@ -80,7 +80,7 @@ func (s *Service) DeriveDimensions(ctx context.Context, roleDesc string, goals [
 		goalNames[i] = g.Name
 	}
 
-	userPrompt := fmt.Sprintf("角色描述：%s\n训练目标：%v\n请推导 3-7 个分析维度。", roleDesc, goalNames)
+	userPrompt := fmt.Sprintf("对话者角色：%s\n训练目标：%v\n请推导 3-7 个分析维度，用于评估用户与该对话者交流时的表现。", roleDesc, goalNames)
 
 	messages := []llm.ChatMessage{
 		{Role: llm.RoleSystem, Content: deriveDimensionsSystemPrompt},

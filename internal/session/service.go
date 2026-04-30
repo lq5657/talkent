@@ -295,22 +295,22 @@ type roleConfigJSON struct {
 
 func BuildSystemPrompt(desc, scenario string, goals []role.TrainingGoal, dims []role.Dimension) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "你是一位对话训练伙伴。请按照以下设定进行对话：\n\n角色设定：%s\n场景：%s", desc, scenario)
+	fmt.Fprintf(&b, "你将扮演以下角色与用户进行对话：\n\n你的角色：%s\n场景背景：%s\n\n请完全沉浸在这个角色中，用该角色的身份、语气和知识背景与用户对话。用户的目标是在这个场景中练习自己的应对和表达能力。", desc, scenario)
 
 	if len(goals) > 0 {
-		b.WriteString("\n训练目标：")
+		b.WriteString("\n\n训练目标（在这些方面帮助用户提升）：")
 		for _, g := range goals {
 			fmt.Fprintf(&b, "\n- %s：%s", g.Name, g.Description)
 		}
 	}
 
 	if len(dims) > 0 {
-		b.WriteString("\n期望分析维度：")
+		b.WriteString("\n\n对话结束后，将从以下维度分析用户的表现：")
 		for _, d := range dims {
 			fmt.Fprintf(&b, "\n- %s：%s", d.Name, d.Description)
 		}
 	}
 
-	b.WriteString("\n\n请自然地进行对话，保持角色设定，引导对话朝训练目标发展。")
+	b.WriteString("\n\n请自然地进行对话，始终保持在角色中，引导对话朝训练目标发展。")
 	return b.String()
 }
