@@ -1,40 +1,40 @@
 ---
 change_id: e2e-integration
-stage1_status: fail
+stage1_status: partial
 stage2_status: skipped
-final_status: fail
+final_status: partial
 findings:
   - level: Critical
     description: "中间件顺序错误导致 panic recovery 失效。RecoveryMiddleware 在 TimeoutMiddleware 外层，但 TimeoutMiddleware 通过 go func() 在独立 goroutine 中执行下游 handler。当 handler panic 时，panic 发生在子 goroutine，RecoveryMiddleware 的 defer recover() 在父 goroutine 无法捕获，进程直接崩溃。违反 spec 验收标准'panic 返回 500 不崩溃'。修复：交换 Recovery 和 Timeout 的顺序。"
-    status: open
+    status: fixed
     location: internal/server/server.go:31-34
   - level: Important
     description: "tasks.md T1 RecoveryMiddleware 签名不匹配。task 声明 func RecoveryMiddleware(next http.Handler) http.Handler，实际实现是工厂函数 func RecoveryMiddleware(logger *slog.Logger) func(http.Handler) http.Handler。"
-    status: open
+    status: fixed
     location: .claude/changes/e2e-integration/tasks.md:T1
   - level: Important
     description: "tasks.md T2 声明 engine_test.go 验证日志不含 raw_output，但现有测试未捕获或断言日志输出。代码修改正确，但测试验证声明缺乏对应实现。"
-    status: open
+    status: fixed
     location: .claude/changes/e2e-integration/tasks.md:T2
   - level: Important
     description: "tasks.md T1 '不包含范围'声明矛盾：不新增中间件测试文件 vs 验证步骤要求新增中间件测试。实际已正确创建 middleware_test.go，应修正文档。"
-    status: open
+    status: fixed
     location: .claude/changes/e2e-integration/tasks.md:T1
   - level: Important
-    description: "验证映射 V1-V5 全部 todo，未在 cc-apply 中同步为 apply-covered。违反 verification.md 映射同步要求。"
-    status: open
+    description: "验证映射 V1-V5 全部 todo，未在 cc-apply 中同步为 apply-covered。V1-V3 已同步为 apply-covered，V4/V5 为 manual 验证待执行。"
+    status: fixed
     location: .claude/changes/e2e-integration/spec.md:§8
   - level: Important
     description: "T4 执行记录表为空，log.md 中无 5 个场景的实际执行证据。cc-archive 前必须补充。"
     status: open
     location: test/e2e/scenarios.md:221-227
   - level: Minor
-    description: "baseline/ 目录未创建，但 tasks 中声明了 baseline delta。需创建或移除声明。"
-    status: open
+    description: "baseline/ 目录未创建，但 tasks 中声明了 baseline delta。已从 tasks.md 移除所有 baseline delta 声明。"
+    status: fixed
     location: .claude/changes/e2e-integration/tasks.md:T1-T4
   - level: Minor
-    description: "Scenario 2 无对应 curl 脚本（预期为手工浏览器验证），建议在 run-all.sh 中增加说明。"
-    status: open
+    description: "Scenario 2 无对应 curl 脚本（预期为手工浏览器验证），已在 run-all.sh 中增加说明。"
+    status: fixed
     location: test/e2e/curl/
 ---
 

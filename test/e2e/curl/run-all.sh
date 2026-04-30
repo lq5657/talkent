@@ -35,7 +35,7 @@ if [ "${1:-}" ]; then
     3) run_scenario "Scenario 3: Empty Input" "$SCRIPT_DIR/scenario-3-empty-input.sh" || FAILED=$((FAILED+1)) ;;
     4) run_scenario "Scenario 4: Round Limit" "$SCRIPT_DIR/scenario-4-round-limit.sh" || FAILED=$((FAILED+1)) ;;
     5) run_scenario "Scenario 5: Concurrent" "$SCRIPT_DIR/scenario-5-concurrent.sh" || FAILED=$((FAILED+1)) ;;
-    *) echo "Unknown scenario: $1 (available: 1, 3, 4, 5)"; exit 1 ;;
+    *) echo "Unknown scenario: $1 (available: 1, 3, 4, 5; scenario 2 is manual browser-only)"; exit 1 ;;
   esac
 else
   # Run all scenarios (skip scenario 2 — requires manual browser interaction)

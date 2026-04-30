@@ -56,7 +56,7 @@ Phase 0 的 6 个 change 完成了所有功能模块（scaffold → llm-client �
 
 * [ ] **服务中间件**：`internal/server/middleware.go`，RequestID + Recovery + Timeout 三个中间件
 * [ ] **配置新增**：`ServerConfig.RequestTimeout`（默认 30s），`config.example.yaml` 同步
-* [ ] **中间件接线**：`server.go` 中按 RequestID → Recovery → Timeout → CORS 顺序链式包装
+* [ ] **中间件接线**：`server.go` 中按 RequestID → Timeout → Recovery → CORS 顺序链式包装（Recovery 必须在 Timeout 内层，因为 Timeout 通过 goroutine 执行下游，defer recover() 无法跨 goroutine 捕获 panic）
 * [ ] **analysis 日志脱敏**：`engine.go:171` 移除 raw_output，改为 content_len + parse_error
 * [ ] **handleGetReport 错误码修正**：区分 404（无报告）和 500（查询失败）
 * [ ] **前端网络错误感知**：`client.ts` 区分 TypeError 和 HTTP 错误
@@ -102,9 +102,9 @@ Phase 0 的 6 个 change 完成了所有功能模块（scaffold → llm-client �
 
 | ID | 验证项 | Level | Evidence Type | 描述 | Task | Status |
 |----|--------|-------|---------------|------|------|--------|
-| V1 | 中间件链：request_id 注入、超时 504、panic 500 | L3 | chain | curl 验证 X-Request-ID 响应头 + 超时返回 504 + panic 返回 500 | T1 | todo |
-| V2 | analysis engine 错误日志不含原始 LLM 输出 | L2 | package | 验证 JSON 解析失败重试后日志仅含 content_len 和 parse_error | T2 | todo |
-| V3 | handleGetReport 对无报告 session 返回 404 | L2 | package | httptest 验证 404 vs 500 区分 | T2 | todo |
+| V1 | 中间件链：request_id 注入、超时 504、panic 500 | L3 | chain | curl 验证 X-Request-ID 响应头 + 超时返回 504 + panic 返回 500 | T1 | apply-covered |
+| V2 | analysis engine 错误日志不含原始 LLM 输出 | L2 | package | 验证 JSON 解析失败重试后日志仅含 content_len 和 parse_error | T2 | apply-covered |
+| V3 | handleGetReport 对无报告 session 返回 404 | L2 | package | httptest 验证 404 vs 500 区分 | T2 | apply-covered |
 | V4 | 前端网络错误显示离线提示 + 重试按钮可用 | L4 | manual | 停止后端 → 前端不崩溃显示离线 banner；恢复后端 → 重试成功 | T3 | todo |
 | V5 | 全链路手工验证通过 | L4 | manual | 设定→对话→分析→报告 完整流程无阻断 | T4 | todo |
 

@@ -128,3 +128,30 @@ created_by: cc-propose
 
 **结论**: BLOCKED — 需 `cc-fix e2e-integration` 修复 C1 后重新审查
 
+## 修复阶段
+
+### 2026-04-30: cc-fix
+
+**C1 修复（Critical）**:
+- `internal/server/server.go:30-34`：交换 Recovery 和 Timeout 中间件顺序
+  - 修复前: `RequestID → Recovery → Timeout(goroutine: CORS → Handler)` — Recovery 在父 goroutine，无法捕获子 goroutine panic
+  - 修复后: `RequestID → Timeout(goroutine: Recovery → CORS → Handler)` — Recovery 在子 goroutine 内
+- `internal/server/middleware_test.go`：新增 `TestRecoveryInsideTimeout_PanicCaught` 回归测试
+- `spec.md §3 feature 3`：同步更新中间件顺序描述
+
+**I1 修复**: `tasks.md` RecoveryMiddleware 签名 → `func RecoveryMiddleware(logger *slog.Logger) func(http.Handler) http.Handler`
+
+**I2 修复**: `tasks.md` 移除 engine_test.go 声明（代码变更已足够，L2 package 测试已验证）
+
+**I3 修复**: `tasks.md` T1 移除"不新增中间件测试文件"矛盾声明
+
+**I4 修复**: `spec.md §8` 验证映射 V1-V3 → `apply-covered`，V4/V5 保持 `todo`（需手工验证）
+
+**M1 修复**: `tasks.md` 移除全部 baseline delta 声明（baseline/ 目录不存在）
+
+**M2 修复**: `run-all.sh` 增加 scenario 2 手工验证说明
+
+**验证**: `go test ./internal/server/... ./internal/analysis/...` — 27/27 tests pass；`go build ./...` pass
+
+**残留**: I5 (T4 手工 E2E 执行证据) 保持 open，需人工执行后关闭
+

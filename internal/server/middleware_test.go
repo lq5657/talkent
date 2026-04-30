@@ -111,3 +111,26 @@ func TestRequestIDFromContext_Empty(t *testing.T) {
 		t.Errorf("expected empty, got %q", id)
 	}
 }
+
+func TestRecoveryInsideTimeout_PanicCaught(t *testing.T) {
+	// Regression guard for C1: Recovery must be inside Timeout's goroutine
+	// so that handler panics are caught instead of crashing the process.
+	logger := newTestLogger()
+
+	var handler http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		panic("handler panic inside timeout goroutine")
+	})
+	handler = RecoveryMiddleware(logger)(handler) // innermost
+	handler = TimeoutMiddleware(1 * time.Second)(handler)
+
+	req := httptest.NewRequest("GET", "/test", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusInternalServerError {
+		t.Errorf("expected 500, got %d", rec.Code)
+	}
+	if rec.Body.String() != `{"error":"internal server error"}` {
+		t.Errorf("unexpected body: %s", rec.Body.String())
+	}
+}

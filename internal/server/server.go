@@ -29,8 +29,8 @@ func New(cfg *config.Config, db *sql.DB, logger *slog.Logger, registerRoutes fun
 
 	var handler http.Handler = mux
 	handler = corsMiddleware(handler)
-	handler = TimeoutMiddleware(timeout)(handler)
 	handler = RecoveryMiddleware(logger)(handler)
+	handler = TimeoutMiddleware(timeout)(handler)
 	handler = RequestIDMiddleware(handler)
 
 	return &http.Server{
