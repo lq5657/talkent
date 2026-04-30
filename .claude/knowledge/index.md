@@ -95,3 +95,8 @@
 * **v-html XSS防护** : marked v15 无内置 sanitize，DOMPurify.sanitize() 是 v-html 渲染 Markdown 的强制红线 → `knowledge/web-frontend-patterns.md`
 * **CORS中间件最佳实践** : Allow-Methods/Headers 仅对允许源设置 + Max-Age:86400 减少预检 + Vite 代理免 CORS → `knowledge/web-frontend-patterns.md`
 * **highlight.js分包** : manualChunks 拆分 970KB 包为按需加载 chunk，避免首屏影响 → `knowledge/web-frontend-patterns.md`
+* **中间件Goroutine安全** : RecoveryMiddleware 必须在 TimeoutMiddleware 内层（子 goroutine 内），否则子 goroutine panic 会崩溃进程 → `knowledge/e2e-integration-patterns.md`
+* **LLM日志脱敏** : JSON 解析失败重试后禁止记录原始 LLM 输出，只记录 content_len + parse_error → `knowledge/e2e-integration-patterns.md`
+* **E2E并发LLM限流** : 并发创建会话需逐个检查 null + sleep 1 + 单独重试应对 LLM API 限流 → `knowledge/e2e-integration-patterns.md`
+* **fetch TypeError判别** : try/catch 包裹 fetch()，`e instanceof TypeError` 区分网络故障与 HTTP 错误 → `knowledge/web-frontend-patterns.md`
+* **Vue3离线检测** : `ref(navigator.onLine)` + `online`/`offline` 事件 + sticky banner → `knowledge/web-frontend-patterns.md`

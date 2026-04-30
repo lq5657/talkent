@@ -28,7 +28,7 @@ echo ""
 echo "--- Step 2: Recommend Dimensions ---"
 DIMS=$(curl -s -X POST "$BASE_URL/api/roles/recommend-dimensions" \
   -H "Content-Type: application/json" \
-  -d "{\"role_type\":\"技术面试官\",\"goals\":[{\"name\":\"$GOAL_NAME\",\"description\":\"$GOAL_DESC\"}],\"mode\":\"training\",\"role_desc\":\"一名经验丰富的技术面试官\"}")
+  -d "{\"role_type\":\"技术面试官\",\"goals\":[{\"name\":\"$GOAL_NAME\",\"description\":\"$GOAL_DESC\"}],\"mode\":\"derive\",\"role_desc\":\"一名经验丰富的技术面试官\"}")
 echo "$DIMS" | jq '.'
 DIM_NAME=$(echo "$DIMS" | jq -r '.dimensions[0].name // empty')
 DIM_DESC=$(echo "$DIMS" | jq -r '.dimensions[0].description // empty')

@@ -1,6 +1,6 @@
 ---
 change_id: e2e-integration
-status: review
+status: done
 depends_on:
   - scaffold-project
   - llm-client

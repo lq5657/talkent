@@ -34,3 +34,19 @@
 - highlight.js 全量包约 970KB，必须通过 Vite `manualChunks` 拆分为独立 chunk
 - 配置：`build: { rollupOptions: { output: { manualChunks: { 'highlight.js': ['highlight.js'] } } } }`
 - 拆分后仅在使用报告页时按需加载，不影响首屏
+
+## fetch TypeError 网络错误判别
+
+- `fetch()` 在网络不可达时抛出 `TypeError`，而 HTTP 4xx/5xx 正常 resolve
+- API client 必须 `try/catch` 包裹 `fetch()`，用 `e instanceof TypeError` 区分网络故障和 HTTP 错误
+- 网络故障消息：`'网络连接失败，请检查后端服务是否启动'`（status=0）
+- HTTP 错误走 `!res.ok` 分支，正常解析 `content-type` 获取错误消息
+- **适用范围**: 所有前端 API client 实现
+
+## Vue 3 离线检测
+
+- 使用 `ref(navigator.onLine)` 初始化在线状态
+- `onMounted` 中注册 `window.addEventListener('online'/'offline', handler)`
+- `onUnmounted` 中移除监听器防止内存泄漏
+- 模板中使用 `v-if="!onLine"` 显示 sticky top banner（`bg-amber-500`）
+- **适用范围**: 任何需要离线感知的 Vue 3 SPA

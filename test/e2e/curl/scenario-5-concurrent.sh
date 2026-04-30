@@ -12,13 +12,15 @@ echo ""
 TEMP_DIR=$(mktemp -d)
 trap "rm -rf $TEMP_DIR" EXIT
 
+PAYLOAD='{"role_description":"数学老师","scenario":"习题讲解","role_type":"数学老师","goals":[{"name":"讲解清晰","description":"学生能听懂"}],"dimensions":[{"name":"耐心","description":"是否耐心解答"}],"round_limit":2}'
+
 # Step 1: Create 3 sessions concurrently
 echo "--- Step 1: Create 3 Sessions Concurrently ---"
 for i in 1 2 3; do
   (
     curl -s -X POST "$BASE_URL/api/sessions" \
       -H "Content-Type: application/json" \
-      -d '{"role_description":"数学老师","scenario":"习题讲解","role_type":"数学老师","goals":[{"name":"讲解清晰","description":"学生能听懂"}],"dimensions":[{"name":"耐心","description":"是否耐心解答"}],"round_limit":2}' \
+      -d "$PAYLOAD" \
       > "$TEMP_DIR/session_$i.json"
   ) &
 done
@@ -26,7 +28,29 @@ wait
 echo "PASS: 3 sessions created concurrently"
 echo ""
 
-# Step 2: Extract session IDs
+# Step 2: Extract session IDs, retry individually if any failed
+echo "--- Step 2: Validate and Retry if Needed ---"
+for i in 1 2 3; do
+  SID=$(jq -r '.session_id // empty' "$TEMP_DIR/session_$i.json")
+  if [ -z "$SID" ] || [ "$SID" = "null" ]; then
+    echo "Session $i returned null, retrying individually..."
+    sleep 1
+    curl -s -X POST "$BASE_URL/api/sessions" \
+      -H "Content-Type: application/json" \
+      -d "$PAYLOAD" \
+      > "$TEMP_DIR/session_$i.json"
+    SID=$(jq -r '.session_id // empty' "$TEMP_DIR/session_$i.json")
+    if [ -z "$SID" ] || [ "$SID" = "null" ]; then
+      echo "FAIL: session $i still null after retry"
+      cat "$TEMP_DIR/session_$i.json"
+      exit 1
+    fi
+    echo "Session $i retry OK: $SID"
+  else
+    echo "Session $i: $SID"
+  fi
+done
+
 SID1=$(jq -r '.session_id' "$TEMP_DIR/session_1.json")
 SID2=$(jq -r '.session_id' "$TEMP_DIR/session_2.json")
 SID3=$(jq -r '.session_id' "$TEMP_DIR/session_3.json")
