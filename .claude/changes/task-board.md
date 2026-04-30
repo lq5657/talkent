@@ -5,7 +5,7 @@
 
 ```text
 last_updated: 2026-04-30
-updated_by: cc-propose
+updated_by: cc-review
 ```
 
 ## 1. 正式 Change
@@ -18,7 +18,7 @@ updated_by: cc-propose
 | chat-session | done | cc-archive | 对话会话生命周期：创建、对话、记忆管理、结束 | internal/{session,memory,store}, cmd/server, internal/config | scaffold-project(done), llm-client(done), role-and-goal(done) | - | review PASSED, 0C/0I(2fixed)/0M(2fixed+1accepted), 23 tests, knowledge沉淀4条, 已归档 |
 | analysis-engine | done | cc-archive | 多维度分析引擎：结构化分析+JSON解析容错+Markdown报告+自动触发 | internal/{analysis,store,session}, cmd/server, internal/config | scaffold-project(done), llm-client(done), role-and-goal(done), chat-session(done) | - | review PASSED, F1-F5 fixed, 95 tests, knowledge沉淀4条, 已归档 |
 | web-frontend | done | cc-archive | 三页面 Web SPA：设定页+对话页+报告页，Vue 3 + Tailwind | web/, internal/server | Phase 0 全部 done | - | review PASSED, 13 findings fixed, knowledge沉淀5条, 已归档 |
-| e2e-integration | propose | cc-propose | E2E 集成加固：中间件、错误处理边界、前端重试UX、E2E验证场景 | internal/server, internal/analysis, web/, test/e2e (new) | scaffold-project(done), llm-client(done), role-and-goal(done), chat-session(done), analysis-engine(done), web-frontend(done) | HARD-GATE → cc-apply | 95 tests baseline, 4 tasks (T1-T3 parallelizable) |
+| e2e-integration | review | cc-review | E2E 集成加固：中间件、错误处理边界、前端重试UX、E2E验证场景 | internal/server, internal/analysis, web/, test/e2e (new) | scaffold-project(done), llm-client(done), role-and-goal(done), chat-session(done), analysis-engine(done), web-frontend(done) | C1 Critical 阻塞 → cc-fix | review BLOCKED: 1C/5I/2M, Stage2 skipped |
 
 ## 2. Backlog 候选
 

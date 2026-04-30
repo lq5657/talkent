@@ -110,3 +110,21 @@ created_by: cc-propose
 
 **验证**：`test/e2e/curl/run-all.sh` 可独立执行；`go build ./...` + `npm run build` 通过
 
+## 审查阶段
+
+### 2026-04-30: cc-review
+
+**Stage 1 (spec compliance)**: FAILED — 1 Critical (C1: 中间件顺序导致 panic recovery 失效)
+
+**Stage 2 (code quality)**: SKIPPED — 被 Stage 1 Critical 阻塞
+
+**Findings 汇总**：
+- C1 (Critical): `server.go:31-34` Recovery 在 Timeout 外层，子 goroutine panic 无法被父 goroutine 的 defer recover() 捕获
+- I1 (Important): tasks.md RecoveryMiddleware 签名与实际实现不符
+- I2 (Important): engine_test.go 日志断言未实现但 task 已声明
+- I3 (Important): tasks.md T1 "不包含范围"与"验证步骤"矛盾
+- I4 (Important): 验证映射 V1-V5 全部 todo，未同步
+- I5 (Important): T4 场景执行证据缺失
+
+**结论**: BLOCKED — 需 `cc-fix e2e-integration` 修复 C1 后重新审查
+
