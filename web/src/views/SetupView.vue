@@ -105,7 +105,7 @@ async function createSession() {
 <template>
   <div class="min-h-screen bg-gray-50">
     <div class="max-w-2xl mx-auto px-4 py-6 md:py-8 space-y-6 md:space-y-8">
-      <h1 class="text-2xl font-bold text-gray-900">Talkent - 角色扮演训练</h1>
+      <h1 class="text-2xl font-bold text-gray-900">Talkent - 沟通训练</h1>
 
       <!-- Error alert -->
       <div
