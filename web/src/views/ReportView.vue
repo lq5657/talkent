@@ -71,9 +71,16 @@ onMounted(() => {
       <!-- Error -->
       <div
         v-if="error"
-        class="p-3 md:p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm"
+        class="p-3 md:p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm flex items-center justify-between gap-2"
       >
-        {{ error }}
+        <span>{{ error }}</span>
+        <button
+          class="shrink-0 px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 text-xs font-medium"
+          :disabled="analyzing"
+          @click="triggerAnalysis"
+        >
+          重试
+        </button>
       </div>
 
       <!-- Loading -->

@@ -164,11 +164,10 @@ func (e *Engine) callWithRetry(ctx context.Context, messages []llm.ChatMessage) 
 
 		results, parseErr = e.parseDimensionResults(resp.Content)
 		if parseErr != nil {
-			truncated := resp.Content
-			if len(truncated) > 500 {
-				truncated = truncated[:500] + "..."
-			}
-			e.logger.Error("analysis json parse failed after retry", "raw_output", truncated)
+			e.logger.Error("analysis json parse failed after retry",
+				"content_len", len(resp.Content),
+				"parse_error", parseErr.Error(),
+			)
 			return nil, "", fmt.Errorf("analysis json parse failed after retry: %w", parseErr)
 		}
 	}

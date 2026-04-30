@@ -26,8 +26,9 @@ type AnalysisConfig struct {
 }
 
 type ServerConfig struct {
-	Host string `yaml:"host"`
-	Port int    `yaml:"port"`
+	Host           string        `yaml:"host"`
+	Port           int           `yaml:"port"`
+	RequestTimeout time.Duration `yaml:"request_timeout"`
 }
 
 type DBConfig struct {
@@ -50,8 +51,9 @@ type LLMConfig struct {
 func Load(path string) (*Config, error) {
 	cfg := &Config{
 		Server: ServerConfig{
-			Host: "0.0.0.0",
-			Port: 8080,
+			Host:           "0.0.0.0",
+			Port:           8080,
+			RequestTimeout: 30 * time.Second,
 		},
 		Database: DBConfig{
 			Path: "./talkent.db",

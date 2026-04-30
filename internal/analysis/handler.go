@@ -87,8 +87,13 @@ func (h *Handler) handleGetReport(w http.ResponseWriter, r *http.Request) {
 
 	report, err := h.svc.GetLatestReport(r.Context(), sessionID)
 	if err != nil {
-		h.logger.Error("get report failed", "error", err)
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to get report"})
+		switch {
+		case errors.Is(err, ErrSessionNotFound):
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "session not found"})
+		default:
+			h.logger.Error("get report failed", "error", err)
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to get report"})
+		}
 		return
 	}
 	if report == nil {

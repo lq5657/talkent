@@ -22,9 +22,20 @@ func New(cfg *config.Config, db *sql.DB, logger *slog.Logger, registerRoutes fun
 		registerRoutes(mux)
 	}
 
+	timeout := cfg.Server.RequestTimeout
+	if timeout <= 0 {
+		timeout = 30 * time.Second
+	}
+
+	var handler http.Handler = mux
+	handler = corsMiddleware(handler)
+	handler = TimeoutMiddleware(timeout)(handler)
+	handler = RecoveryMiddleware(logger)(handler)
+	handler = RequestIDMiddleware(handler)
+
 	return &http.Server{
 		Addr:    cfg.Addr(),
-		Handler: corsMiddleware(mux),
+		Handler: handler,
 	}
 }
 

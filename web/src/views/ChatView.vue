@@ -22,6 +22,7 @@ const error = ref('')
 const autoEndNotice = ref('')
 const roundCurrent = ref(0)
 const roundLimit = ref(0)
+const lastUserMessage = ref('')
 const messagesContainer = ref<HTMLElement | null>(null)
 
 async function scrollToBottom() {
@@ -37,6 +38,7 @@ async function sendMessage() {
 
   error.value = ''
   autoEndNotice.value = ''
+  lastUserMessage.value = content
   messages.value.push({ role: 'user', content })
   inputText.value = ''
   sending.value = true
@@ -74,6 +76,13 @@ async function endSession() {
     error.value = e instanceof Error ? e.message : '结束对话失败'
     ending.value = false
   }
+}
+
+function retryLastMessage() {
+  if (!lastUserMessage.value || sending.value) return
+  error.value = ''
+  inputText.value = lastUserMessage.value
+  sendMessage()
 }
 
 onMounted(async () => {
@@ -116,9 +125,16 @@ onMounted(async () => {
     <!-- Error -->
     <div
       v-if="error"
-      class="shrink-0 mx-4 mt-2 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm"
+      class="shrink-0 mx-4 mt-2 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm flex items-center justify-between gap-2"
     >
-      {{ error }}
+      <span>{{ error }}</span>
+      <button
+        class="shrink-0 px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 text-xs font-medium"
+        :disabled="sending"
+        @click="retryLastMessage"
+      >
+        重试
+      </button>
     </div>
 
     <!-- Messages -->

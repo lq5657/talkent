@@ -23,7 +23,15 @@ async function apiRequest<T>(
     opts.body = JSON.stringify(body)
   }
 
-  const res = await fetch(`${API_BASE}${path}`, opts)
+  let res: Response
+  try {
+    res = await fetch(`${API_BASE}${path}`, opts)
+  } catch (e) {
+    if (e instanceof TypeError) {
+      throw new ApiError('网络连接失败，请检查后端服务是否启动', 0)
+    }
+    throw new ApiError('请求失败，请稍后重试', 0)
+  }
 
   if (!res.ok) {
     let message = '请求失败，请稍后重试'
