@@ -24,6 +24,7 @@ const roundCurrent = ref(0)
 const roundLimit = ref(0)
 const lastUserMessage = ref('')
 const messagesContainer = ref<HTMLElement | null>(null)
+const roleName = ref('AI')
 
 async function scrollToBottom() {
   await nextTick()
@@ -89,6 +90,9 @@ onMounted(async () => {
   try {
     const session = await api.getSession(sessionId)
     roundLimit.value = session.round_limit
+    if (session.role_description) {
+      roleName.value = session.role_description
+    }
   } catch {
     // session info is supplementary — chat still works
   }
@@ -99,7 +103,7 @@ onMounted(async () => {
   <div class="h-screen flex flex-col bg-gray-50">
     <!-- Header -->
     <header class="shrink-0 px-3 md:px-4 py-2 md:py-3 bg-white border-b border-gray-200 flex items-center justify-between gap-2">
-      <h1 class="text-base md:text-lg font-semibold text-gray-800 truncate">对话训练</h1>
+      <h1 class="text-base md:text-lg font-semibold text-gray-800 truncate">{{ roleName }}</h1>
       <div class="flex items-center gap-2 md:gap-3 shrink-0">
         <span v-if="roundLimit > 0" class="text-xs md:text-sm text-gray-500">
           第 {{ roundCurrent }} / {{ roundLimit }} 轮
@@ -147,6 +151,7 @@ onMounted(async () => {
         :key="i"
         :role="msg.role"
         :content="msg.content"
+        :role-name="roleName"
       />
       <div v-if="sending" class="flex justify-start">
         <div class="px-4 py-3 rounded-2xl rounded-bl-md bg-white border border-gray-200 text-sm text-gray-400">

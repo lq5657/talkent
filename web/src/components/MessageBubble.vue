@@ -2,11 +2,15 @@
 defineProps<{
   role: 'user' | 'ai'
   content: string
+  roleName?: string
 }>()
 </script>
 
 <template>
-  <div class="flex" :class="role === 'user' ? 'justify-end' : 'justify-start'">
+  <div class="flex flex-col" :class="role === 'user' ? 'items-end' : 'items-start'">
+    <span class="text-xs text-gray-400 mb-1 px-1">
+      {{ role === 'user' ? '我' : roleName || 'AI' }}
+    </span>
     <div
       class="max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap"
       :class="
