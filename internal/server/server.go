@@ -76,6 +76,22 @@ func healthHandler(db *sql.DB, logger *slog.Logger) http.HandlerFunc {
 	}
 }
 
+// SpaHandler serves a single-page application: tries to serve the requested file,
+// falls back to index.html for client-side routing (Vue Router paths like /chat, /report).
+func SpaHandler(root http.FileSystem) http.Handler {
+	fileServer := http.FileServer(root)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		f, err := root.Open(r.URL.Path)
+		if err != nil {
+			// Path doesn't map to a real file — serve index.html for SPA routing
+			r.URL.Path = "/"
+		} else {
+			f.Close()
+		}
+		fileServer.ServeHTTP(w, r)
+	})
+}
+
 func Run(srv *http.Server, logger *slog.Logger) error {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)

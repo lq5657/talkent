@@ -72,6 +72,10 @@ func main() {
 		roleHandler.RegisterRoutes(mux)
 		sessionHandler.RegisterRoutes(mux)
 		analysisHandler.RegisterRoutes(mux)
+
+		// Frontend static files + SPA fallback
+		mux.Handle("GET /assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("web/dist/assets"))))
+		mux.Handle("/", server.SpaHandler(http.Dir("web/dist")))
 	})
 
 	if err := server.Run(srv, logger); err != nil {

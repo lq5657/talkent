@@ -98,5 +98,6 @@
 * **中间件Goroutine安全** : RecoveryMiddleware 必须在 TimeoutMiddleware 内层（子 goroutine 内），否则子 goroutine panic 会崩溃进程 → `knowledge/e2e-integration-patterns.md`
 * **LLM日志脱敏** : JSON 解析失败重试后禁止记录原始 LLM 输出，只记录 content_len + parse_error → `knowledge/e2e-integration-patterns.md`
 * **E2E并发LLM限流** : 并发创建会话需逐个检查 null + sleep 1 + 单独重试应对 LLM API 限流 → `knowledge/e2e-integration-patterns.md`
+* **静态文件挂载验证盲区** : API测试通过+前端build成功≠后端托管前端文件；必须在spec/tasks中覆盖"胶水代码"横切关注点，E2E至少验证 `GET /` 返回200 → `knowledge/e2e-integration-patterns.md`
 * **fetch TypeError判别** : try/catch 包裹 fetch()，`e instanceof TypeError` 区分网络故障与 HTTP 错误 → `knowledge/web-frontend-patterns.md`
 * **Vue3离线检测** : `ref(navigator.onLine)` + `online`/`offline` 事件 + sticky banner → `knowledge/web-frontend-patterns.md`
