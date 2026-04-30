@@ -224,10 +224,13 @@ func TestEndSession(t *testing.T) {
 		t.Errorf("Status = %q, want %q", ended.Status, "completed")
 	}
 
-	// Double end should fail
-	_, err = svc.EndSession(context.Background(), sess.ID)
-	if err != ErrSessionCompleted {
-		t.Errorf("double end error = %v, want ErrSessionCompleted", err)
+	// Double end should succeed (idempotent — session already completed by auto-end)
+	ended2, err := svc.EndSession(context.Background(), sess.ID)
+	if err != nil {
+		t.Fatalf("double EndSession should be idempotent, got: %v", err)
+	}
+	if ended2.Status != "completed" {
+		t.Errorf("double end Status = %q, want %q", ended2.Status, "completed")
 	}
 }
 

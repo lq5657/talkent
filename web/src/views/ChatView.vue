@@ -53,10 +53,10 @@ async function sendMessage() {
     await scrollToBottom()
 
     if (res.round_info.is_last) {
-      autoEndNotice.value = '对话轮数已达上限，正在结束对话...'
+      autoEndNotice.value = '对话轮数已达上限，正在跳转到分析报告...'
       sending.value = false
-      setTimeout(async () => {
-        await endSession()
+      setTimeout(() => {
+        router.push(`/report/${sessionId}`)
       }, 1500)
       return
     }
@@ -81,6 +81,10 @@ async function endSession() {
 
 function retryLastMessage() {
   if (!lastUserMessage.value || sending.value) return
+  if (error.value.toLowerCase().includes('completed')) {
+    router.push(`/report/${sessionId}`)
+    return
+  }
   error.value = ''
   inputText.value = lastUserMessage.value
   sendMessage()

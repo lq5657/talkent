@@ -201,6 +201,14 @@ func (s *Service) EndSession(ctx context.Context, sessionID string) (*EndSession
 		return nil, ErrSessionNotFound
 	}
 	if sess.Status != "active" {
+		if sess.Status == "completed" {
+			msgCount, _ := s.store.CountMessages(ctx, sessionID)
+			return &EndSessionResult{
+				SessionID:  sessionID,
+				Status:     "completed",
+				FinalRound: msgCount / 2,
+			}, nil
+		}
 		return nil, ErrSessionCompleted
 	}
 
