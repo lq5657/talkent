@@ -80,9 +80,11 @@ type chatRequest struct {
 }
 
 type chatResponse struct {
-	Reply        string      `json:"reply"`
-	RoundInfo    roundInfo   `json:"round_info"`
-	MemorySource string      `json:"memory_source"`
+	Reply                     string    `json:"reply"`
+	RoundInfo                 roundInfo `json:"round_info"`
+	MemorySource              string    `json:"memory_source"`
+	UserMessageCreatedAt      string    `json:"user_message_created_at"`
+	AssistantMessageCreatedAt string    `json:"assistant_message_created_at"`
 }
 
 type roundInfo struct {
@@ -127,7 +129,9 @@ func (h *Handler) handleChat(w http.ResponseWriter, r *http.Request) {
 			Limit:   result.RoundLimit,
 			IsLast:  result.IsLast,
 		},
-		MemorySource: result.MemorySource,
+		MemorySource:              result.MemorySource,
+		UserMessageCreatedAt:      result.UserMessageCreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
+		AssistantMessageCreatedAt: result.AssistantMessageCreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
 	})
 }
 

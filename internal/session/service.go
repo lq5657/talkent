@@ -44,11 +44,13 @@ type CreateSessionRequest struct {
 }
 
 type ChatResult struct {
-	Reply        string `json:"reply"`
-	CurrentRound int    `json:"current_round"`
-	RoundLimit   int    `json:"limit"`
-	IsLast       bool   `json:"is_last"`
-	MemorySource string `json:"memory_source"`
+	Reply                     string    `json:"reply"`
+	CurrentRound              int       `json:"current_round"`
+	RoundLimit                int       `json:"limit"`
+	IsLast                    bool      `json:"is_last"`
+	MemorySource              string    `json:"memory_source"`
+	UserMessageCreatedAt      time.Time `json:"-"`
+	AssistantMessageCreatedAt time.Time `json:"-"`
 }
 
 type EndSessionResult struct {
@@ -184,11 +186,13 @@ func (s *Service) Chat(ctx context.Context, sessionID string, userContent string
 	s.logger.Info("chat round completed", "session_id", sessionID, "round", currentRound, "memory_source", ctxResult.MemorySource)
 
 	return &ChatResult{
-		Reply:        resp.Content,
-		CurrentRound: currentRound,
-		RoundLimit:   sess.RoundLimit,
-		IsLast:       isLast,
-		MemorySource: ctxResult.MemorySource,
+		Reply:                     resp.Content,
+		CurrentRound:              currentRound,
+		RoundLimit:                sess.RoundLimit,
+		IsLast:                    isLast,
+		MemorySource:              ctxResult.MemorySource,
+		UserMessageCreatedAt:      userMsg.CreatedAt,
+		AssistantMessageCreatedAt: assistantMsg.CreatedAt,
 	}, nil
 }
 
