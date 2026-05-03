@@ -115,6 +115,8 @@ export interface ChatResponse {
   reply: string
   round_info: RoundInfo
   memory_source: string
+  user_message_created_at: string
+  assistant_message_created_at: string
 }
 
 export interface EndSessionResponse {

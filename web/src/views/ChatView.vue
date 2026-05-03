@@ -12,6 +12,7 @@ const sessionId = route.params.id as string
 interface Message {
   role: 'user' | 'ai'
   content: string
+  timestamp: Date
 }
 
 const messages = ref<Message[]>([])
@@ -40,14 +41,17 @@ async function sendMessage() {
   error.value = ''
   autoEndNotice.value = ''
   lastUserMessage.value = content
-  messages.value.push({ role: 'user', content })
+  const userMsg: Message = { role: 'user', content, timestamp: new Date() }
+  messages.value.push(userMsg)
   inputText.value = ''
   sending.value = true
   await scrollToBottom()
 
   try {
     const res: ChatResponse = await api.chat(sessionId, content)
-    messages.value.push({ role: 'ai', content: res.reply })
+    // Overwrite optimistic timestamp with server-created time
+    userMsg.timestamp = new Date(res.user_message_created_at)
+    messages.value.push({ role: 'ai', content: res.reply, timestamp: new Date(res.assistant_message_created_at) })
     roundCurrent.value = res.round_info.current
     roundLimit.value = res.round_info.limit
     await scrollToBottom()
@@ -156,6 +160,8 @@ onMounted(async () => {
         :role="msg.role"
         :content="msg.content"
         :role-name="roleName"
+        :start-time="i > 0 ? messages[i - 1]!.timestamp : undefined"
+        :end-time="msg.timestamp"
       />
       <div v-if="sending" class="flex justify-start">
         <div class="px-4 py-3 rounded-2xl rounded-bl-md bg-white border border-gray-200 text-sm text-gray-400">
