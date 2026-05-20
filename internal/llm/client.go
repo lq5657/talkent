@@ -28,6 +28,13 @@ type ChatOptions struct {
 	MaxTokens   int
 }
 
+type StreamChunk struct {
+	Content string
+	Done    bool
+	Error   error
+}
+
 type Client interface {
 	Chat(ctx context.Context, messages []ChatMessage, opts *ChatOptions) (*ChatResponse, error)
+	ChatStream(ctx context.Context, messages []ChatMessage, opts *ChatOptions) (<-chan StreamChunk, error)
 }

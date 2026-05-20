@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"math"
 	"net/http"
@@ -39,6 +40,54 @@ func NewClient(cfg *config.LLMConfig, logger *slog.Logger) (*OpenAIClient, error
 		cfg:    cfg,
 		logger: logger,
 	}, nil
+}
+
+func (c *OpenAIClient) ChatStream(ctx context.Context, messages []ChatMessage, opts *ChatOptions) (<-chan StreamChunk, error) {
+	req := openai.ChatCompletionRequest{
+		Model:    c.cfg.Model,
+		Messages: toOpenAIMessages(messages),
+		Stream:   true,
+	}
+
+	if opts != nil {
+		req.Temperature = opts.Temperature
+		req.MaxTokens = opts.MaxTokens
+	}
+
+	c.logger.Info("llm chat stream request",
+		"provider", c.cfg.Provider,
+		"model", c.cfg.Model,
+		"messages", len(messages),
+	)
+
+	stream, err := c.client.CreateChatCompletionStream(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("create chat stream: %w", err)
+	}
+
+	ch := make(chan StreamChunk, 8)
+	go func() {
+		defer close(ch)
+		defer stream.Close()
+
+		for {
+			response, err := stream.Recv()
+			if err != nil {
+				if errors.Is(err, io.EOF) || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+					ch <- StreamChunk{Done: true}
+				} else {
+					ch <- StreamChunk{Error: err}
+				}
+				return
+			}
+
+			if len(response.Choices) > 0 {
+				ch <- StreamChunk{Content: response.Choices[0].Delta.Content}
+			}
+		}
+	}()
+
+	return ch, nil
 }
 
 func (c *OpenAIClient) Chat(ctx context.Context, messages []ChatMessage, opts *ChatOptions) (*ChatResponse, error) {

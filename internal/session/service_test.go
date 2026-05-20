@@ -19,6 +19,10 @@ type mockClient struct {
 	err      error
 }
 
+func (m *mockClient) ChatStream(ctx context.Context, messages []llm.ChatMessage, opts *llm.ChatOptions) (<-chan llm.StreamChunk, error) {
+	return nil, nil
+}
+
 func (m *mockClient) Chat(ctx context.Context, messages []llm.ChatMessage, opts *llm.ChatOptions) (*llm.ChatResponse, error) {
 	if m.err != nil {
 		return nil, m.err
