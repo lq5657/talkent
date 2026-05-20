@@ -239,7 +239,7 @@ func (h *Handler) handleChatStream(w http.ResponseWriter, r *http.Request) {
 
 	for chunk := range ch {
 		if chunk.Error != nil {
-			fmt.Fprintf(w, "data: {\"error\":\"%s\"}\n\n", chunk.Error.Error())
+			fmt.Fprintf(w, "data: {\"error\":%q}\n\n", chunk.Error.Error())
 			flusher.Flush()
 			return
 		}
