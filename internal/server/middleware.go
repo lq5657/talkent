@@ -95,3 +95,9 @@ func (tw *timeoutResponseWriter) Write(b []byte) (int, error) {
 	tw.written = true
 	return tw.ResponseWriter.Write(b)
 }
+
+func (tw *timeoutResponseWriter) Flush() {
+	if f, ok := tw.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
+}
