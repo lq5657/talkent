@@ -53,6 +53,13 @@ type ChatResult struct {
 	AssistantMessageCreatedAt time.Time `json:"-"`
 }
 
+type ChatStreamChunk struct {
+	Content string
+	Done    bool
+	Error   error
+	Result  *ChatResult // set when Done=true and no error
+}
+
 type EndSessionResult struct {
 	SessionID  string
 	Status     string
@@ -194,6 +201,117 @@ func (s *Service) Chat(ctx context.Context, sessionID string, userContent string
 		UserMessageCreatedAt:      userMsg.CreatedAt,
 		AssistantMessageCreatedAt: assistantMsg.CreatedAt,
 	}, nil
+}
+
+func (s *Service) ChatStream(ctx context.Context, sessionID string, userContent string) (<-chan ChatStreamChunk, error) {
+	sess, err := s.store.GetSession(ctx, sessionID)
+	if err != nil {
+		return nil, fmt.Errorf("get session: %w", err)
+	}
+	if sess == nil {
+		return nil, ErrSessionNotFound
+	}
+	if sess.Status != "active" {
+		return nil, ErrSessionCompleted
+	}
+
+	msgCount, err := s.store.CountMessages(ctx, sessionID)
+	if err != nil {
+		return nil, fmt.Errorf("count messages: %w", err)
+	}
+	currentRound := msgCount / 2
+
+	userMsg := &store.Message{
+		SessionID:   sessionID,
+		Role:        "user",
+		Content:     userContent,
+		SequenceNum: msgCount + 1,
+		CreatedAt:   time.Now(),
+	}
+	if err := s.store.CreateMessage(ctx, userMsg); err != nil {
+		return nil, fmt.Errorf("create user message: %w", err)
+	}
+
+	rc, goals, dims, err := s.parseSessionConfig(sess)
+	if err != nil {
+		return nil, fmt.Errorf("parse session config: %w", err)
+	}
+
+	systemPrompt := BuildSystemPrompt(rc.Description, rc.Scenario, goals, dims)
+
+	history, err := s.store.ListMessages(ctx, sessionID)
+	if err != nil {
+		return nil, fmt.Errorf("list messages: %w", err)
+	}
+
+	ctxResult, err := s.memory.BuildContext(ctx, systemPrompt, history)
+	if err != nil {
+		return nil, fmt.Errorf("build context: %w", err)
+	}
+
+	llmStream, err := s.llmClient.ChatStream(ctx, ctxResult.Messages, &llm.ChatOptions{Temperature: 0.7})
+	if err != nil {
+		return nil, fmt.Errorf("llm chat stream: %w", err)
+	}
+
+	ch := make(chan ChatStreamChunk, 8)
+	go func() {
+		defer close(ch)
+
+		var fullContent string
+		for chunk := range llmStream {
+			if chunk.Error != nil {
+				ch <- ChatStreamChunk{Error: chunk.Error}
+				return
+			}
+			if chunk.Done {
+				break
+			}
+			fullContent += chunk.Content
+			ch <- ChatStreamChunk{Content: chunk.Content}
+		}
+
+		assistantMsg := &store.Message{
+			SessionID:   sessionID,
+			Role:        "assistant",
+			Content:     fullContent,
+			SequenceNum: msgCount + 2,
+			CreatedAt:   time.Now(),
+		}
+		if err := s.store.CreateMessage(ctx, assistantMsg); err != nil {
+			ch <- ChatStreamChunk{Error: fmt.Errorf("create assistant message: %w", err)}
+			return
+		}
+
+		currentRound++
+		isLast := sess.RoundLimit > 0 && currentRound >= sess.RoundLimit
+
+		if isLast {
+			if err := s.store.UpdateSessionStatus(ctx, sessionID, "completed"); err != nil {
+				ch <- ChatStreamChunk{Error: fmt.Errorf("auto end session: %w", err)}
+				return
+			}
+			s.logger.Info("session auto-ended", "session_id", sessionID, "final_round", currentRound, "trigger", "auto")
+			s.notifySessionEnd(sessionID)
+		}
+
+		s.logger.Info("chat stream round completed", "session_id", sessionID, "round", currentRound, "memory_source", ctxResult.MemorySource)
+
+		ch <- ChatStreamChunk{
+			Done: true,
+			Result: &ChatResult{
+				Reply:                     fullContent,
+				CurrentRound:              currentRound,
+				RoundLimit:                sess.RoundLimit,
+				IsLast:                    isLast,
+				MemorySource:              ctxResult.MemorySource,
+				UserMessageCreatedAt:      userMsg.CreatedAt,
+				AssistantMessageCreatedAt: assistantMsg.CreatedAt,
+			},
+		}
+	}()
+
+	return ch, nil
 }
 
 func (s *Service) EndSession(ctx context.Context, sessionID string) (*EndSessionResult, error) {

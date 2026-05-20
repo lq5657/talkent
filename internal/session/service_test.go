@@ -40,6 +40,30 @@ func setupTestStore(t *testing.T) *store.SessionStore {
 	return store.NewSessionStore(db)
 }
 
+type streamMockClient struct {
+	tokens []string
+	err    error
+}
+
+func (m *streamMockClient) Chat(ctx context.Context, messages []llm.ChatMessage, opts *llm.ChatOptions) (*llm.ChatResponse, error) {
+	return &llm.ChatResponse{Content: "not used"}, nil
+}
+
+func (m *streamMockClient) ChatStream(ctx context.Context, messages []llm.ChatMessage, opts *llm.ChatOptions) (<-chan llm.StreamChunk, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	ch := make(chan llm.StreamChunk, len(m.tokens)+1)
+	go func() {
+		defer close(ch)
+		for _, t := range m.tokens {
+			ch <- llm.StreamChunk{Content: t}
+		}
+		ch <- llm.StreamChunk{Done: true}
+	}()
+	return ch, nil
+}
+
 var testLogger = slog.New(slog.NewTextHandler(os.Stderr, nil))
 
 func TestCreateSession(t *testing.T) {
@@ -277,6 +301,150 @@ func TestChat_AutoEndNotifiesOnSessionEnd(t *testing.T) {
 	}
 	if !hookCalled {
 		t.Error("OnSessionEnd hook was not called when session auto-ended via Chat")
+	}
+	if hookSessionID != sess.ID {
+		t.Errorf("hook sessionID = %q, want %q", hookSessionID, sess.ID)
+	}
+}
+
+func TestChatStream_Success(t *testing.T) {
+	s := setupTestStore(t)
+	mock := &streamMockClient{tokens: []string{"Hello", " from", " stream"}}
+	mgr := memory.NewManager(10, mock, testLogger)
+	svc := NewService(s, mgr, mock, testLogger)
+
+	sess, _ := svc.CreateSession(context.Background(), CreateSessionRequest{
+		RoleDescription: "面试者",
+		RoundLimit:      5,
+	})
+
+	ch, err := svc.ChatStream(context.Background(), sess.ID, "hello")
+	if err != nil {
+		t.Fatalf("ChatStream: %v", err)
+	}
+
+	var content string
+	var gotDone bool
+	for chunk := range ch {
+		if chunk.Error != nil {
+			t.Fatalf("unexpected error: %v", chunk.Error)
+		}
+		if chunk.Done {
+			gotDone = true
+			if chunk.Result == nil {
+				t.Fatal("expected Result on done chunk")
+			}
+			if chunk.Result.Reply != "Hello from stream" {
+				t.Errorf("Reply = %q, want %q", chunk.Result.Reply, "Hello from stream")
+			}
+			if chunk.Result.CurrentRound != 1 {
+				t.Errorf("CurrentRound = %d, want 1", chunk.Result.CurrentRound)
+			}
+			break
+		}
+		content += chunk.Content
+	}
+
+	if !gotDone {
+		t.Error("expected Done chunk")
+	}
+	if content != "Hello from stream" {
+		t.Errorf("content = %q, want %q", content, "Hello from stream")
+	}
+}
+
+func TestChatStream_SessionNotFound(t *testing.T) {
+	s := setupTestStore(t)
+	mock := &streamMockClient{tokens: []string{"ok"}}
+	mgr := memory.NewManager(10, mock, testLogger)
+	svc := NewService(s, mgr, mock, testLogger)
+
+	_, err := svc.ChatStream(context.Background(), "nonexistent", "hello")
+	if err != ErrSessionNotFound {
+		t.Errorf("expected ErrSessionNotFound, got %v", err)
+	}
+}
+
+func TestChatStream_SessionCompleted(t *testing.T) {
+	s := setupTestStore(t)
+	mock := &streamMockClient{tokens: []string{"ok"}}
+	mgr := memory.NewManager(10, mock, testLogger)
+	svc := NewService(s, mgr, mock, testLogger)
+
+	sess, _ := svc.CreateSession(context.Background(), CreateSessionRequest{
+		RoleDescription: "面试者",
+	})
+	s.UpdateSessionStatus(context.Background(), sess.ID, "completed")
+
+	_, err := svc.ChatStream(context.Background(), sess.ID, "hello")
+	if err != ErrSessionCompleted {
+		t.Errorf("expected ErrSessionCompleted, got %v", err)
+	}
+}
+
+func TestChatStream_RoundLimit(t *testing.T) {
+	s := setupTestStore(t)
+	mock := &streamMockClient{tokens: []string{"reply"}}
+	mgr := memory.NewManager(10, mock, testLogger)
+	svc := NewService(s, mgr, mock, testLogger)
+
+	sess, _ := svc.CreateSession(context.Background(), CreateSessionRequest{
+		RoleDescription: "面试者",
+		RoundLimit:      1,
+	})
+
+	ch, err := svc.ChatStream(context.Background(), sess.ID, "msg")
+	if err != nil {
+		t.Fatalf("ChatStream: %v", err)
+	}
+
+	var gotDone bool
+	for chunk := range ch {
+		if chunk.Error != nil {
+			t.Fatalf("unexpected error: %v", chunk.Error)
+		}
+		if chunk.Done {
+			gotDone = true
+			if !chunk.Result.IsLast {
+				t.Error("expected IsLast=true when round limit reached")
+			}
+			break
+		}
+	}
+	if !gotDone {
+		t.Error("expected Done chunk")
+	}
+
+	got, _ := s.GetSession(context.Background(), sess.ID)
+	if got.Status != "completed" {
+		t.Errorf("session status = %q, want completed", got.Status)
+	}
+}
+
+func TestChatStream_OnSessionEndHook(t *testing.T) {
+	s := setupTestStore(t)
+	mock := &streamMockClient{tokens: []string{"final"}}
+	mgr := memory.NewManager(10, mock, testLogger)
+	svc := NewService(s, mgr, mock, testLogger)
+
+	var hookCalled bool
+	var hookSessionID string
+	svc.OnSessionEnd = func(_ context.Context, sessionID string) {
+		hookCalled = true
+		hookSessionID = sessionID
+	}
+
+	sess, _ := svc.CreateSession(context.Background(), CreateSessionRequest{
+		RoleDescription: "面试者",
+		RoundLimit:      1,
+	})
+
+	ch, _ := svc.ChatStream(context.Background(), sess.ID, "msg")
+	for range ch {
+	}
+
+	if !hookCalled {
+		t.Error("OnSessionEnd hook was not called when session auto-ended via ChatStream")
 	}
 	if hookSessionID != sess.ID {
 		t.Errorf("hook sessionID = %q, want %q", hookSessionID, sess.ID)
