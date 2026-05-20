@@ -5,7 +5,7 @@
 
 ```text
 last_updated: 2026-05-20
-updated_by: cc-propose
+updated_by: cc-archive
 ```
 
 ## 1. 正式 Change

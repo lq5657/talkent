@@ -8,6 +8,9 @@
 | 2026-05-19 | propose | HARD-GATE：用户选择"暂停，等待澄清" | spec/tasks 已写入，auto-validation 全部通过，等待用户恢复 |
 | 2026-05-20 | propose | 恢复 cc-propose，HARD-GATE 确认通过 | auto-validation 全部 PASSED，用户确认进入 cc-apply |
 | 2026-05-20 | apply | Task 1-5 全部完成，promote 到 review | 5 commits, 115 Go tests, frontend build ok, cc-verify+delta passed |
+| 2026-05-20 | review | cc-review 完成：Stage1 PASS, Stage2 PASS, 4 findings | F1(%s JSON), F2(duplicate fallback), F3(goroutine ctx), F4(spec §6) |
+| 2026-05-20 | fix | F1-F4 全部修复 | commits b399702, f00a963, dc91a24 |
+| 2026-05-20 | archive | L4 验证发现 F5 (Flusher middleware), 修复后归档 | 3 knowledge entries 沉淀; commit e9c33c4, 50b9fd2 |
 
 #### 技术决策
 
@@ -27,6 +30,13 @@
 | 2026-05-20 | 201b472 feat(session) | SSE handler/tests | L2 | 4 SSE handler tests passed |
 | 2026-05-20 | e450e74 feat(frontend) | client.ts, ChatView.vue | L4 (build) | vue-tsc + vite build passed |
 | 2026-05-20 | 07b9561 feat(frontend) | ChatInput.vue, MessageBubble.vue | L4 (build) | vue-tsc + vite build passed |
+| 2026-05-20 | dbd486c review | review.md | — | Stage1 PASS, Stage2 PASS, 4 findings |
+| 2026-05-20 | b399702 fix(F1) | handler.go | L2 | %s → %q JSON escaping |
+| 2026-05-20 | f00a963 fix(F2) | ChatView.vue | L4 (build) | always pop before fallback |
+| 2026-05-20 | dc91a24 fix(F3+F4) | service.go, spec.md | L2 | ctx.Err() check + spec §6 update |
+| 2026-05-20 | aec5cc4 review | review.md, task-board | — | mark all findings fixed |
+| 2026-05-20 | e9c33c4 fix(F5) | middleware.go + L4 screenshot | L2+L4 | Flusher fix + browser evidence |
+| 2026-05-20 | 50b9fd2 archive | spec.md, review, knowledge/ | — | status=done, 3 knowledge entries |
 
 #### 踩坑记录
 
