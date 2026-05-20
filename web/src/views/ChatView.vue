@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, nextTick, onMounted } from 'vue'
+import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { api, type ChatResponse } from '../api/client'
+import { api, chatStream, type ChatResponse } from '../api/client'
 import MessageBubble from '../components/MessageBubble.vue'
 import ChatInput from '../components/ChatInput.vue'
 
@@ -26,6 +26,25 @@ const roundLimit = ref(0)
 const lastUserMessage = ref('')
 const messagesContainer = ref<HTMLElement | null>(null)
 const roleName = ref('AI')
+const streamAbort = ref<AbortController | null>(null)
+
+function speakReply(text: string) {
+  if (!('speechSynthesis' in window)) return
+  speechSynthesis.cancel()
+  const utter = new SpeechSynthesisUtterance(text)
+  utter.lang = 'zh-CN'
+  speechSynthesis.speak(utter)
+}
+
+function cancelStream() {
+  streamAbort.value?.abort()
+  streamAbort.value = null
+}
+
+onBeforeUnmount(() => {
+  cancelStream()
+  speechSynthesis.cancel()
+})
 
 async function scrollToBottom() {
   await nextTick()
@@ -47,28 +66,71 @@ async function sendMessage() {
   sending.value = true
   await scrollToBottom()
 
-  try {
-    const res: ChatResponse = await api.chat(sessionId, content)
-    // Overwrite optimistic timestamp with server-created time
-    userMsg.timestamp = new Date(res.user_message_created_at)
-    messages.value.push({ role: 'ai', content: res.reply, timestamp: new Date(res.assistant_message_created_at) })
-    roundCurrent.value = res.round_info.current
-    roundLimit.value = res.round_info.limit
-    await scrollToBottom()
+  // Streaming mode
+  const aiMsg: Message = { role: 'ai', content: '', timestamp: new Date() }
+  messages.value.push(aiMsg)
+  const controller = new AbortController()
+  streamAbort.value = controller
+  let streamFailed = false
 
-    if (res.round_info.is_last) {
-      autoEndNotice.value = '对话轮数已达上限，正在跳转到分析报告...'
-      sending.value = false
-      setTimeout(() => {
-        router.push(`/report/${sessionId}`)
-      }, 1500)
-      return
+  try {
+    for await (const event of chatStream(sessionId, content, controller.signal)) {
+      if (event.type === 'token') {
+        aiMsg.content += event.token!
+        await scrollToBottom()
+      } else if (event.type === 'done') {
+        userMsg.timestamp = new Date(event.user_message_created_at!)
+        aiMsg.timestamp = new Date(event.assistant_message_created_at!)
+        roundCurrent.value = event.round_info!.current
+        roundLimit.value = event.round_info!.limit
+        await scrollToBottom()
+
+        speakReply(aiMsg.content)
+
+        if (event.round_info!.is_last) {
+          autoEndNotice.value = '对话轮数已达上限，正在跳转到分析报告...'
+          sending.value = false
+          setTimeout(() => router.push(`/report/${sessionId}`), 1500)
+          return
+        }
+      } else if (event.type === 'error') {
+        streamFailed = true
+        break
+      }
     }
   } catch (e) {
-    error.value = e instanceof Error ? e.message : '发送消息失败'
-  } finally {
-    sending.value = false
+    streamFailed = true
   }
+
+  streamAbort.value = null
+
+  if (streamFailed) {
+    // Remove partial streaming message, fallback to non-streaming
+    messages.value.pop()
+    try {
+      const res: ChatResponse = await api.chat(sessionId, content)
+      userMsg.timestamp = new Date(res.user_message_created_at)
+      messages.value.push({ role: 'ai', content: res.reply, timestamp: new Date(res.assistant_message_created_at) })
+      roundCurrent.value = res.round_info.current
+      roundLimit.value = res.round_info.limit
+      await scrollToBottom()
+      speakReply(res.reply)
+
+      if (res.round_info.is_last) {
+        autoEndNotice.value = '对话轮数已达上限，正在跳转到分析报告...'
+        sending.value = false
+        setTimeout(() => router.push(`/report/${sessionId}`), 1500)
+        return
+      }
+    } catch (e2) {
+      error.value = e2 instanceof Error ? e2.message : '发送消息失败'
+    } finally {
+      sending.value = false
+    }
+    return
+  }
+
+  sending.value = false
 }
 
 async function endSession() {

@@ -16,6 +16,10 @@ type mockLLMClient struct {
 	err      error
 }
 
+func (m *mockLLMClient) ChatStream(ctx context.Context, messages []llm.ChatMessage, opts *llm.ChatOptions) (<-chan llm.StreamChunk, error) {
+	return nil, nil
+}
+
 func (m *mockLLMClient) Chat(ctx context.Context, messages []llm.ChatMessage, opts *llm.ChatOptions) (*llm.ChatResponse, error) {
 	return m.response, m.err
 }
@@ -170,6 +174,10 @@ func TestService_PromptInjectionPrevention(t *testing.T) {
 type capturingClient struct {
 	inner    *mockLLMClient
 	messages *[]llm.ChatMessage
+}
+
+func (c *capturingClient) ChatStream(ctx context.Context, messages []llm.ChatMessage, opts *llm.ChatOptions) (<-chan llm.StreamChunk, error) {
+	return nil, nil
 }
 
 func (c *capturingClient) Chat(ctx context.Context, messages []llm.ChatMessage, opts *llm.ChatOptions) (*llm.ChatResponse, error) {

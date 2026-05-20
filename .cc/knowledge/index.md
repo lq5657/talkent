@@ -104,6 +104,12 @@
 #### 踩坑记录
 
 * **Go time.Format 中 "Z" 是字面字符不是时区** : `.Format("2006-01-02T15:04:05Z")` 中的 "Z" 是格式字符串字面量，不表示 UTC 时区。`time.Now()` 为本地时间，直接以此格式输出会生成"声称是 UTC 但实际是本地时间"的字符串；JS `new Date()` 按 UTC 解析后显示时会产生时区偏移错误。**正确做法**: `.UTC().Format("2006-01-02T15:04:05Z")` 或使用 `time.RFC3339`。→ `message-timing` change (handler.go 时区修复)
+* **SSE + http.Flusher middleware 陷阱** : HTTP middleware 包装 `http.ResponseWriter` 时必须显式暴露 `Flush()` 方法，否则 `w.(http.Flusher)` 断言失败 → SSE 端点永远不可用 → `pitfalls/sse-flusher-middleware.md`
+* **Go fmt %q vs %s JSON 陷阱** : `fmt.Fprintf` 手工构建 JSON 时 `%s` 不转义特殊字符会生成非法 JSON，必须用 `%q` 或 `json.Marshal` → `pitfalls/go-fmt-q-vs-s-json.md`
+
+#### 技术约定
+
+* **Go streaming channel 模式** : `<-chan T` + 内部 goroutine 桥接第三方流式 API → `technical-conventions/go-streaming-channel-pattern.md`
 
 #### Refinement Candidates
 

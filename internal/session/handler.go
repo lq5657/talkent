@@ -2,6 +2,7 @@ package session
 
 import (
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -20,6 +21,7 @@ func NewHandler(svc *Service, logger *slog.Logger) *Handler {
 func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/sessions", h.handleCreate)
 	mux.HandleFunc("POST /api/sessions/{id}/chat", h.handleChat)
+	mux.HandleFunc("GET /api/sessions/{id}/chat/stream", h.handleChatStream)
 	mux.HandleFunc("POST /api/sessions/{id}/end", h.handleEnd)
 	mux.HandleFunc("GET /api/sessions/{id}", h.handleGet)
 }
@@ -198,6 +200,67 @@ func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
 		MessageCount:    detail.MessageCount,
 		CreatedAt:       detail.CreatedAt.Format("2006-01-02T15:04:05Z"),
 	})
+}
+
+func (h *Handler) handleChatStream(w http.ResponseWriter, r *http.Request) {
+	sessionID := r.PathValue("id")
+	content := r.URL.Query().Get("content")
+
+	if content == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "content is required"})
+		return
+	}
+
+	ch, err := h.svc.ChatStream(r.Context(), sessionID, content)
+	if err != nil {
+		switch err {
+		case ErrSessionNotFound:
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "session not found"})
+		case ErrSessionCompleted:
+			writeJSON(w, http.StatusConflict, map[string]string{"error": "session already completed"})
+		default:
+			h.logger.Error("chat stream failed", "error", err, "session_id", sessionID)
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to process chat"})
+		}
+		return
+	}
+
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "streaming not supported"})
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.WriteHeader(http.StatusOK)
+	flusher.Flush()
+
+	for chunk := range ch {
+		if chunk.Error != nil {
+			fmt.Fprintf(w, "data: {\"error\":%q}\n\n", chunk.Error.Error())
+			flusher.Flush()
+			return
+		}
+
+		if chunk.Done {
+			fmt.Fprintf(w, "data: {\"done\":true,\"reply\":%q,\"round_info\":{\"current\":%d,\"limit\":%d,\"is_last\":%v},\"memory_source\":%q,\"user_message_created_at\":%q,\"assistant_message_created_at\":%q}\n\n",
+				chunk.Result.Reply,
+				chunk.Result.CurrentRound,
+				chunk.Result.RoundLimit,
+				chunk.Result.IsLast,
+				chunk.Result.MemorySource,
+				chunk.Result.UserMessageCreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
+				chunk.Result.AssistantMessageCreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
+			)
+			flusher.Flush()
+			return
+		}
+
+		fmt.Fprintf(w, "data: {\"token\":%q}\n\n", chunk.Content)
+		flusher.Flush()
+	}
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

@@ -18,6 +18,10 @@ type mockLLMClient struct {
 	lastMsgs  []llm.ChatMessage
 }
 
+func (m *mockLLMClient) ChatStream(ctx context.Context, messages []llm.ChatMessage, opts *llm.ChatOptions) (<-chan llm.StreamChunk, error) {
+	return nil, nil
+}
+
 func (m *mockLLMClient) Chat(ctx context.Context, messages []llm.ChatMessage, opts *llm.ChatOptions) (*llm.ChatResponse, error) {
 	m.lastMsgs = messages
 	idx := m.callCount

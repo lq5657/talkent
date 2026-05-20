@@ -208,3 +208,113 @@ func TestHandleGet_NotFound(t *testing.T) {
 
 // Ensure mockClient satisfies llm.Client in this package too
 var _ llm.Client = (*mockClient)(nil)
+
+func setupStreamHandler(t *testing.T) (*Handler, *store.SessionStore) {
+	t.Helper()
+	db, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatalf("open test db: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+
+	mock := &streamMockClient{tokens: []string{"Hello", " from", " SSE"}}
+	s := store.NewSessionStore(db)
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	mgr := memory.NewManager(10, mock, logger)
+	svc := NewService(s, mgr, mock, logger)
+	h := NewHandler(svc, logger)
+	return h, s
+}
+
+func TestHandleChatStream_Success(t *testing.T) {
+	h, _ := setupStreamHandler(t)
+
+	sess, _ := h.svc.CreateSession(context.Background(), CreateSessionRequest{
+		RoleDescription: "面试者",
+		RoundLimit:      5,
+	})
+
+	mux := http.NewServeMux()
+	h.RegisterRoutes(mux)
+
+	req := httptest.NewRequest("GET", "/api/sessions/"+sess.ID+"/chat/stream?content=hello", nil)
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", w.Code)
+	}
+	if ct := w.Header().Get("Content-Type"); ct != "text/event-stream" {
+		t.Errorf("Content-Type = %q, want text/event-stream", ct)
+	}
+
+	body := w.Body.String()
+	if !containsStr(body, `data: {"token":"Hello"}`) {
+		t.Error("expected token 'Hello' in SSE stream")
+	}
+	if !containsStr(body, `"done":true`) {
+		t.Error("expected done event in SSE stream")
+	}
+	if !containsStr(body, `"reply":"Hello from SSE"`) {
+		t.Error("expected full reply in done event")
+	}
+}
+
+func TestHandleChatStream_MissingContent(t *testing.T) {
+	h, _ := setupStreamHandler(t)
+
+	mux := http.NewServeMux()
+	h.RegisterRoutes(mux)
+
+	req := httptest.NewRequest("GET", "/api/sessions/some-id/chat/stream", nil)
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want 400", w.Code)
+	}
+}
+
+func TestHandleChatStream_SessionNotFound(t *testing.T) {
+	h, _ := setupStreamHandler(t)
+
+	mux := http.NewServeMux()
+	h.RegisterRoutes(mux)
+
+	req := httptest.NewRequest("GET", "/api/sessions/nonexistent/chat/stream?content=hello", nil)
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want 404", w.Code)
+	}
+}
+
+func TestHandleChatStream_SessionCompleted(t *testing.T) {
+	h, s := setupStreamHandler(t)
+
+	sess, _ := h.svc.CreateSession(context.Background(), CreateSessionRequest{
+		RoleDescription: "面试者",
+	})
+	s.UpdateSessionStatus(context.Background(), sess.ID, "completed")
+
+	mux := http.NewServeMux()
+	h.RegisterRoutes(mux)
+
+	req := httptest.NewRequest("GET", "/api/sessions/"+sess.ID+"/chat/stream?content=hello", nil)
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	if w.Code != http.StatusConflict {
+		t.Errorf("status = %d, want 409", w.Code)
+	}
+}
+
+func containsStr(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
+}

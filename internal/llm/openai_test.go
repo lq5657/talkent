@@ -368,3 +368,136 @@ func TestChatCompletion_HTTPTimesOutWithConfigTimeout(t *testing.T) {
 		t.Fatal("expected error from HTTP client timeout, got nil")
 	}
 }
+
+func streamResponse(chunks []string) string {
+	parts := make([]string, 0, len(chunks))
+	for _, c := range chunks {
+		parts = append(parts, fmt.Sprintf(`data: {"id":"test","object":"chat.completion.chunk","model":"test-model","choices":[{"index":0,"delta":{"content":"%s"},"finish_reason":null}]}`, c))
+	}
+	parts = append(parts, `data: {"id":"test","object":"chat.completion.chunk","model":"test-model","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":10,"completion_tokens":20,"total_tokens":30}}`)
+	parts = append(parts, "data: [DONE]")
+	return strings.Join(parts, "\n\n") + "\n\n"
+}
+
+func TestChatStream_Success(t *testing.T) {
+	ts := newTestServer(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/chat/completions" {
+			t.Errorf("expected /chat/completions, got %s", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Write([]byte(streamResponse([]string{"Hello", " from", " AI"})))
+	})
+	defer ts.Close()
+
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	client := newTestClient(ts, logger)
+
+	ch, err := client.ChatStream(context.Background(), []ChatMessage{
+		{Role: RoleUser, Content: "Hello"},
+	}, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var content string
+	for chunk := range ch {
+		if chunk.Error != nil {
+			t.Fatalf("unexpected error in chunk: %v", chunk.Error)
+		}
+		if chunk.Done {
+			break
+		}
+		content += chunk.Content
+	}
+
+	if content != "Hello from AI" {
+		t.Errorf("expected 'Hello from AI', got %q", content)
+	}
+}
+
+func TestChatStream_ServerError(t *testing.T) {
+	ts := newTestServer(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		w.Write([]byte(`{"error":{"message":"overloaded","type":"server_error","code":503}}`))
+	})
+	defer ts.Close()
+
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	client := newTestClient(ts, logger)
+
+	_, err := client.ChatStream(context.Background(), []ChatMessage{
+		{Role: RoleUser, Content: "test"},
+	}, nil)
+	if err == nil {
+		t.Fatal("expected error from stream creation, got nil")
+	}
+}
+
+func TestChatStream_ContextCancelled(t *testing.T) {
+	ts := newTestServer(func(w http.ResponseWriter, r *http.Request) {
+		flusher, ok := w.(http.Flusher)
+		if !ok {
+			t.Fatal("expected Flusher")
+		}
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "keep-alive")
+		w.Write([]byte(`data: {"id":"test","object":"chat.completion.chunk","model":"test-model","choices":[{"index":0,"delta":{"content":"hello"},"finish_reason":null}]}`))
+		w.Write([]byte("\n\n"))
+		flusher.Flush()
+		time.Sleep(2 * time.Second)
+	})
+	defer ts.Close()
+
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	client := newTestClient(ts, logger)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	ch, err := client.ChatStream(ctx, []ChatMessage{
+		{Role: RoleUser, Content: "test"},
+	}, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var gotDone bool
+	for chunk := range ch {
+		if chunk.Error != nil {
+			t.Logf("stream error (expected): %v", chunk.Error)
+		}
+		if chunk.Done {
+			gotDone = true
+		}
+	}
+	if !gotDone {
+		t.Error("expected Done chunk after context cancellation")
+	}
+}
+
+func TestChatStream_NoRetry(t *testing.T) {
+	callCount := 0
+	ts := newTestServer(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Write([]byte(streamResponse([]string{"ok"})))
+	})
+	defer ts.Close()
+
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	client := newTestClient(ts, logger)
+
+	ch, err := client.ChatStream(context.Background(), []ChatMessage{
+		{Role: RoleUser, Content: "test"},
+	}, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	for range ch {
+	}
+
+	if callCount != 1 {
+		t.Errorf("stream should not retry, got %d calls", callCount)
+	}
+}
