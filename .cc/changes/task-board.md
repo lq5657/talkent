@@ -4,7 +4,7 @@
 它不是 `spec.md` / `tasks.md` 的替代品；真实需求、验收和证据仍以单个 `.cc/changes/<change-id>/` 为准。
 
 ```text
-last_updated: 2026-05-03
+last_updated: 2026-05-20
 updated_by: cc-propose
 ```
 
@@ -13,6 +13,7 @@ updated_by: cc-propose
 | change_id | 状态 | 来源 | 目标摘要 | 影响模块 | 阻塞 / 依赖 | 下一命令 | 最近证据 |
 |-----------|------|------|----------|----------|-------------|----------|----------|
 | message-timing | done | cc-archive | 对话页消息显示开始时间、结束时间、持续时间 | session handler/service, ChatView, MessageBubble | 无 | — | 已归档，0 open findings |
+| voice-interaction | review | cc-apply | 流式文字 + 浏览器语音交互（STT/TTS） | llm, session, server, ChatView, ChatInput, MessageBubble | 无 | cc-review | 5 tasks done, 115 Go tests passed, frontend build ok, cc-verify+delta passed |
 
 ## 2. Backlog 候选
 
