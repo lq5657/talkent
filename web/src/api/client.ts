@@ -208,4 +208,81 @@ export const api = {
   },
 }
 
-export { ApiError }
+export interface ChatStreamEvent {
+  type: 'token' | 'done' | 'error'
+  token?: string
+  reply?: string
+  round_info?: RoundInfo
+  memory_source?: string
+  user_message_created_at?: string
+  assistant_message_created_at?: string
+  error?: string
+}
+
+async function* chatStream(
+  sessionId: string,
+  content: string,
+  signal?: AbortSignal,
+): AsyncGenerator<ChatStreamEvent> {
+  const res = await fetch(
+    `${API_BASE}/sessions/${sessionId}/chat/stream?content=${encodeURIComponent(content)}`,
+    { signal },
+  )
+
+  if (!res.ok) {
+    let message = '流式请求失败'
+    try {
+      const data = await res.json()
+      if (data.error) message = data.error
+    } catch { /* fallthrough */ }
+    yield { type: 'error', error: message }
+    return
+  }
+
+  const reader = res.body!.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() ?? ''
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue
+        const payload = line.slice(6)
+        try {
+          const event = JSON.parse(payload)
+          if (event.error) {
+            yield { type: 'error', error: event.error }
+            return
+          }
+          if (event.done) {
+            yield {
+              type: 'done',
+              reply: event.reply,
+              round_info: event.round_info,
+              memory_source: event.memory_source,
+              user_message_created_at: event.user_message_created_at,
+              assistant_message_created_at: event.assistant_message_created_at,
+            }
+            return
+          }
+          if (event.token) {
+            yield { type: 'token', token: event.token }
+          }
+        } catch {
+          // Skip unparseable events
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock()
+  }
+}
+
+export { chatStream, ApiError }
