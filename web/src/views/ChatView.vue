@@ -105,10 +105,8 @@ async function sendMessage() {
   streamAbort.value = null
 
   if (streamFailed) {
-    // Remove empty AI streaming message, fallback to non-streaming
-    if (!aiMsg.content) {
-      messages.value.pop()
-    }
+    // Remove partial streaming message, fallback to non-streaming
+    messages.value.pop()
     try {
       const res: ChatResponse = await api.chat(sessionId, content)
       userMsg.timestamp = new Date(res.user_message_created_at)
