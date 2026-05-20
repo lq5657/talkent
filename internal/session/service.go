@@ -260,6 +260,9 @@ func (s *Service) ChatStream(ctx context.Context, sessionID string, userContent 
 
 		var fullContent string
 		for chunk := range llmStream {
+			if ctx.Err() != nil {
+				return
+			}
 			if chunk.Error != nil {
 				ch <- ChatStreamChunk{Error: chunk.Error}
 				return

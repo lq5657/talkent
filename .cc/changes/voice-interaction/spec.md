@@ -109,7 +109,7 @@ proposal_profile: standard
 | 操作 | 接口 | 方法 | 变更内容 | 兼容性 |
 |------|------|------|----------|--------|
 | 新增 | `/api/sessions/{id}/chat/stream` | GET | SSE 流式 Chat，query param `content`，返回 `text/event-stream` | compatible_addition |
-| 保留 | `/api/sessions/{id}/chat` | POST | 不变 | — |
+| 调整 | `/api/sessions/{id}/chat` | POST | response 新增 `user_message_created_at`、`assistant_message_created_at` 字段（message-timing change 配套） | compatible_addition |
 
 #### 7. 影响范围
 
