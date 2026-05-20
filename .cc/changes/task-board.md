@@ -13,7 +13,7 @@ updated_by: cc-propose
 | change_id | 状态 | 来源 | 目标摘要 | 影响模块 | 阻塞 / 依赖 | 下一命令 | 最近证据 |
 |-----------|------|------|----------|----------|-------------|----------|----------|
 | message-timing | done | cc-archive | 对话页消息显示开始时间、结束时间、持续时间 | session handler/service, ChatView, MessageBubble | 无 | — | 已归档，0 open findings |
-| voice-interaction | review | cc-fix | 流式文字 + 浏览器语音交互（STT/TTS） | llm, session, server, ChatView, ChatInput, MessageBubble | 0 open findings | cc-archive | 4 findings fixed, Stage1 PASS, Stage2 PASS |
+| voice-interaction | done | cc-archive | 流式文字 + 浏览器语音交互（STT/TTS） | llm, session, server, ChatView, ChatInput, MessageBubble | 无 | — | 5 findings fixed, 3 knowledge entries, L4 verified |
 
 ## 2. Backlog 候选
 

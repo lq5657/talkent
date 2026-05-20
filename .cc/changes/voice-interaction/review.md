@@ -1,11 +1,11 @@
 ---
 change_id: voice-interaction
-reviewed_at: 2026-05-20 12:50
+reviewed_at: 2026-05-20 13:45
 reviewer: Claude Code
 stage1_status: pass
 stage2_status: pass
 final_status: pass
-findings_fixed: 4
+findings_fixed: 5
 ---
 
 ### Review Report — 流式文字 + 浏览器语音交互
@@ -24,9 +24,9 @@ findings_fixed: 4
 |------|------------|----------------|------------------|--------------|------|------|
 | Task 1: LLM ChatStream | V1 | go test ./internal/llm/ | 25 tests (4 new ChatStream) | ✓ 通过 | PASS | |
 | Task 2: Session ChatStream | V2 | go test ./internal/session/ | 5 new ChatStream tests | ✓ 通过 | PASS | |
-| Task 3: SSE Handler | V3 | curl + go test | 4 SSE handler tests | ✓ 通过 | PASS | L4 curl 验证待手工 |
-| Task 4: Frontend Streaming | V4 | vue-tsc + vite build + 手工 | build passed | ✓ 通过 | PASS | L4 手工验证待执行 |
-| Task 5: Frontend Voice UI | V4 | vue-tsc + vite build + 手工 | build passed | ✓ 通过 | PASS | L4 手工验证待执行 |
+| Task 3: SSE Handler | V3 | curl + go test | 4 SSE handler tests + curl SSE verified ✓ | ✓ 通过 | PASS | |
+| Task 4: Frontend Streaming | V4 | vue-tsc + vite build + 手工 | build + browser streaming verified ✓ | ✓ 通过 | PASS | L4 截图证据见 baseline/ |
+| Task 5: Frontend Voice UI | V4 | vue-tsc + vite build + 手工 | build + browser UI verified (mic/play buttons) ✓ | ✓ 通过 | PASS | L4 截图证据见 baseline/ |
 
 #### 2.1 验证映射检查
 
@@ -35,7 +35,7 @@ findings_fixed: 4
 | V1 | L2 package test | ✓ | go test ./internal/llm/ — 25 passed, 4 ChatStream tests | PASS |
 | V2 | L2 package test | ✓ | go test ./internal/session/ — 5 ChatStream tests | PASS |
 | V3 | L2 package test | ✓ | go test ./internal/session/ handler — 4 SSE tests | PASS |
-| V4 | L4 manual browser | ⚠️ | Build passes, but no manual browser verification evidence in log | GAP |
+| V4 | L4 manual browser | ✓ | Browser: SSE streaming + mic/play buttons verified, screenshot in baseline/ | PASS |
 
 注：V4 的手工浏览器验证 (L4) 是 spec 明确要求的，目前只有构建成功证据。建议在 `cc-archive` 前补充手工验证证据或降级为 L4 build-only。
 
@@ -78,6 +78,7 @@ findings_fixed: 4
 | F2 | Important | SSE 流式部分成功时 fallback 产生重复消息 — `aiMsg` 已有部分 token 时 `messages.value.pop()` 不执行，但 fallback 的 `api.chat()` 会追加第二条 AI 消息 | ChatView.vue:108-115 | fallback 前始终移除部分流式消息 | fixed (f00a963) |
 | F3 | Minor | Service goroutine 在客户端断开时可能阻塞 — `ChatStream` 的转发 goroutine 不检查 context cancellation | service.go:258 | goroutine 内增加 `ctx.Err()` 检查 | fixed (dc91a24) |
 | F4 | Minor | POST /chat 响应新增字段未记录于 spec — `user_message_created_at` 和 `assistant_message_created_at` 未在 spec §6 接口变更表中列出 | handler.go:86-87; spec.md §6 | spec §6 更新为 "调整" + "compatible_addition" | fixed (dc91a24) |
+| F5 | Critical | `timeoutResponseWriter` 缺少 `Flush()` 方法 — 中间件包装 ResponseWriter 丢失 Flusher 接口，SSE 端点永远返回 "streaming not supported" | server/middleware.go:84-87 | 添加 `Flush()` 委托方法 | fixed (e9c33c4) |
 
 #### 5.1 Accepted Findings 确认记录（按需）
 
@@ -86,5 +87,5 @@ findings_fixed: 4
 #### 6. 结论
 
 * **Stage 1 结论**：**PASS** — spec 全覆盖，无缺失功能，无理解偏差，业务规则全部落地
-* **Stage 2 结论**：**PASS** — 全部 4 个 findings 已修复 (F1: b399702, F2: f00a963, F3+F4: dc91a24)
-* **总体结论**：**可归档** — 0 open findings
+* **Stage 2 结论**：**PASS** — 全部 5 个 findings 已修复 (F1-F4 + 归档中发现 F5)
+* **总体结论**：**可归档** — 0 open findings, L4 浏览器验证证据完整
