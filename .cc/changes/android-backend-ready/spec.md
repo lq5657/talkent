@@ -1,6 +1,6 @@
 ---
 change_id: android-backend-ready
-status: review
+status: done
 depends_on: []
 parallel_safe: true
 branch: feat/android-backend-ready

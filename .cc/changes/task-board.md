@@ -5,7 +5,7 @@
 
 ```text
 last_updated: 2026-05-24
-updated_by: cc-propose
+updated_by: cc-archive
 ```
 
 ## 1. 正式 Change
@@ -19,7 +19,7 @@ updated_by: cc-propose
 
 | 候选项 | 来源 | 推荐 change_id | 价值 | 前置条件 | 建议下一步 |
 |--------|------|----------------|------|----------|------------|
-| android-backend-ready | review | cc-propose | 后端 JWT 认证 + 网络可达，为 Android 客户端做准备 | config, auth, server, web | 无 | cc-apply | 待 HARD-GATE 确认 |
+| android-backend-ready | done | cc-archive | 后端 JWT 认证 + 网络可达，为 Android 客户端做准备 | config, auth, server, web | 无 | -- | 已归档，0 open findings, E2E 6/6 PASS |
 
 ## 3. 阻塞项
 
