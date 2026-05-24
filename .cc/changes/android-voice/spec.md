@@ -1,6 +1,6 @@
 ---
 change_id: android-voice
-status: review
+status: done
 depends_on: [android-core-shell]
 parallel_safe: false
 branch: feat/android-voice
