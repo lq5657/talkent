@@ -1,6 +1,6 @@
 ---
 change_id: android-offline-cache
-status: propose
+status: review
 depends_on: [android-core-shell]
 parallel_safe: false
 branch: feat/android-offline-cache
