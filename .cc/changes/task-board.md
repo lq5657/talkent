@@ -17,7 +17,7 @@ updated_by: cc-archive
 | android-backend-ready | done | cc-archive | 后端 JWT 认证 + 网络可达 | config, auth, server, web | 无 | -- | E2E 6/6 PASS, 2 knowledge |
 | android-core-shell | done | cc-archive | Android 项目骨架 + 4 页面 (Setup/Chat/Report/Settings) | android/ | 无 | -- | 0 open findings, 2 knowledge |
 | android-voice | done | cc-archive | Android 语音交互 (STT/TTS) — 按住说话 + 自动朗读 | android/ui/chat | android-core-shell | -- | 0 open findings, no new knowledge |
-| android-offline-cache | propose | cc-propose | Room 离线缓存 — 会话+消息+报告缓存优先+后台刷新 | android/data/local | android-core-shell | cc-apply | HARD-GATE confirmed |
+| android-offline-cache | done | cc-archive | Room 离线缓存 — 会话+消息+报告缓存优先+后台刷新 | android/data/local | android-core-shell | -- | 0 open findings, no new knowledge |
 
 ## 2. Backlog 候选
 
