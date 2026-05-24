@@ -15,6 +15,7 @@ type Config struct {
 	LLM      LLMConfig      `yaml:"llm"`
 	Session  SessionConfig  `yaml:"session"`
 	Analysis AnalysisConfig `yaml:"analysis"`
+	Auth     AuthConfig     `yaml:"auth"`
 }
 
 type SessionConfig struct {
@@ -23,6 +24,14 @@ type SessionConfig struct {
 
 type AnalysisConfig struct {
 	AutoTrigger bool `yaml:"auto_trigger"`
+}
+
+type AuthConfig struct {
+	Username      string        `yaml:"username"`
+	Password      string        `yaml:"password"`
+	JWTSecret     string        `yaml:"jwt_secret"`
+	AccessExpiry  time.Duration `yaml:"access_expiry"`
+	RefreshExpiry time.Duration `yaml:"refresh_expiry"`
 }
 
 type ServerConfig struct {
@@ -69,6 +78,13 @@ func Load(path string) (*Config, error) {
 		},
 		Analysis: AnalysisConfig{
 			AutoTrigger: true,
+		},
+		Auth: AuthConfig{
+			Username:      "admin",
+			Password:      "admin",
+			JWTSecret:     "change-me-in-production",
+			AccessExpiry:  1 * time.Hour,
+			RefreshExpiry: 7 * 24 * time.Hour,
 		},
 	}
 
@@ -119,6 +135,25 @@ func applyEnvOverrides(cfg *Config) {
 	}
 	if v := os.Getenv("TALKENT_SESSION_MEMORY_WINDOW_SIZE"); v != "" {
 		fmt.Sscanf(v, "%d", &cfg.Session.MemoryWindowSize)
+	}
+	if v := os.Getenv("TALKENT_AUTH_USERNAME"); v != "" {
+		cfg.Auth.Username = v
+	}
+	if v := os.Getenv("TALKENT_AUTH_PASSWORD"); v != "" {
+		cfg.Auth.Password = v
+	}
+	if v := os.Getenv("TALKENT_AUTH_JWT_SECRET"); v != "" {
+		cfg.Auth.JWTSecret = v
+	}
+	if v := os.Getenv("TALKENT_AUTH_JWT_ACCESS_EXPIRY"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			cfg.Auth.AccessExpiry = d
+		}
+	}
+	if v := os.Getenv("TALKENT_AUTH_JWT_REFRESH_EXPIRY"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			cfg.Auth.RefreshExpiry = d
+		}
 	}
 }
 
