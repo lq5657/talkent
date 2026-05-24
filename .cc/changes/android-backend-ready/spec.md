@@ -177,10 +177,10 @@ android-backend-ready (本 change) → android-core-shell → android-voice → 
 |------|------------------|--------------|----------|--------------|-----------|
 | V1 | JWT 生成/验证正确性 | L2 | package | go test internal/auth/ | T1 | todo |
 | V2 | Auth 中间件拦截未认证请求 | L2 | package | middleware test: 无 token→401 | T2 | todo |
-| V3 | 登录→token→API 全链路 | L3 | chain | curl login → token → GET /api/sessions → 200 | T3 | test-covered (E2E scenario-6: 6/6 PASS) |
-| V4 | Web 登录页 + token 管理 | L4 | manual | 浏览器登录 → 跳转 → 对话 → 刷新不丢失 | T4 | apply-covered (npm build pass; manual browser test deferred) |
-| V5 | SSE stream 认证 (query token) | L3 | chain | curl with token query param → stream | T5 | test-covered (E2E scenario-6-D: PASS) |
-| V6 | Token 过期 + refresh 流程 | L2 | package | go test: 过期 token→401, refresh→新token | T1 | test-covered (E2E scenario-6-C: PASS) |
+| V3 | 登录→token→API 全链路 | L3 | chain | curl login → token → GET /api/sessions → 200 | T3 | test-covered |
+| V4 | Web 登录页 + token 管理 | L4 | manual | 浏览器登录 → 跳转 → 对话 → 刷新不丢失 | T4 | apply-covered |
+| V5 | SSE stream 认证 (query token) | L3 | chain | curl with token query param → stream | T5 | test-covered |
+| V6 | Token 过期 + refresh 流程 | L2 | package | go test: 过期 token→401, refresh→新token | T1 | test-covered |
 
 #### 9.2 发布与回滚
 
