@@ -4,8 +4,8 @@
 它只沉淀可复用、可验证、相对稳定的工程事实；临时猜测必须写入"待确认"，不得写成事实。
 
 ```text
-last_updated: 2026-05-03
-updated_by: cc-apply
+last_updated: 2026-05-24
+updated_by: cc-init
 confidence: high
 ```
 
@@ -15,7 +15,7 @@ confidence: high
 |-------------|----------|------|------|----------|------|
 | 服务入口 | `cmd/server/` | 依赖组装 + 启动 HTTP server + 注册 OnSessionEnd callback | `main.go` | 所有 internal 包 | high |
 | 配置 | `internal/config/` | YAML 加载 + 11 个 TALKENT_* 环境变量覆盖 | `config.go:Load()` | yaml.v3 | high |
-| LLM 客户端 | `internal/llm/` | OpenAI 兼容 API 封装 (Chat/ChatOptions) | `client.go`, `openai.go` | go-openai | high |
+| LLM 客户端 | `internal/llm/` | OpenAI 兼容 API 封装 (Chat/ChatOptions/ChatStream) + SSE 流式响应 | `client.go`, `openai.go`, `convert.go` | go-openai | high |
 | 角色管理 | `internal/role/` | 角色设定 → LLM 推荐目标 → LLM 推荐维度 | `handler.go`, `service.go`, `model.go`, `template.go` | LLM 客户端 | high |
 | 会话管理 | `internal/session/` | 会话生命周期 (active→completed) + 对话 (Chat) + 轮数控制 + 系统提示词构建 | `handler.go`, `service.go`, `errors.go` | Store, Memory, LLM, role | high |
 | 记忆管理 | `internal/memory/` | 滑动窗口记忆 + LLM 摘要压缩 + 降级策略 | `manager.go` | LLM 客户端 | high |
@@ -71,7 +71,8 @@ confidence: high
 
 | change_id | 影响模块 | 影响链路 | 关联验证 | 状态 |
 |-----------|----------|----------|----------|------|
-| message-timing | session handler/service, ChatView, MessageBubble | Chat API 响应时序 + 消息时间展示 | V1 (L2 package), V2 (L4 manual) | review |
+| message-timing | session handler/service, ChatView, MessageBubble | Chat API 响应时序 + 消息时间展示 | V1 (L2 package), V2 (L4 manual) | done |
+| voice-interaction | llm, session, server, ChatView, ChatInput, MessageBubble | SSE ChatStream + 浏览器语音交互 (STT/TTS) | L4 manual verified, 5 findings fixed | done |
 
 ## 6. 待确认事项
 

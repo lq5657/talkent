@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "tool": "cc-verify",
+  "generated_at": "2026-05-24T12:42:31.153493+00:00",
+  "project_root": "/home/lq/workspace/my-projects/AI-projects/cc-talkent-v2",
+  "claude_root": "/home/lq/workspace/my-projects/AI-projects/cc-talkent-v2/.claude",
+  "change_id": "android-backend-ready",
+  "fixture": "",
+  "command": "",
+  "mode": "full",
+  "language_profile": "",
+  "language_profile_source": "repository_detection",
+  "changed_files": [],
+  "status": "passed",
+  "results": [
+    {
+      "name": "cc-lint",
+      "kind": "harness",
+      "command": [
+        "/home/lq/workspace/my-projects/AI-projects/cc-talkent-v2/.claude/scripts/cc-lint",
+        "/home/lq/workspace/my-projects/AI-projects/cc-talkent-v2/.claude",
+        "/home/lq/workspace/my-projects/AI-projects/cc-talkent-v2/.cc/changes/android-backend-ready"
+      ],
+      "cwd": "/home/lq/workspace/my-projects/AI-projects/cc-talkent-v2",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_ms": 214,
+      "stdout": "cc-lint: ok\n",
+      "stderr": "",
+      "fingerprints": [],
+      "warnings": [],
+      "diagnosis": {}
+    },
+    {
+      "name": "cc-sync-check",
+      "kind": "harness",
+      "command": [
+        "/home/lq/workspace/my-projects/AI-projects/cc-talkent-v2/.claude/scripts/cc-sync-check",
+        "/home/lq/workspace/my-projects/AI-projects/cc-talkent-v2/.cc/changes/android-backend-ready"
+      ],
+      "cwd": "/home/lq/workspace/my-projects/AI-projects/cc-talkent-v2",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_ms": 19,
+      "stdout": "cc-sync-check: ok\n",
+      "stderr": "",
+      "fingerprints": [],
+      "warnings": [],
+      "diagnosis": {}
+    },
+    {
+      "name": "cc-readset",
+      "kind": "harness",
+      "command": [
+        "/home/lq/workspace/my-projects/AI-projects/cc-talkent-v2/.claude/scripts/cc-readset",
+        "--check"
+      ],
+      "cwd": "/home/lq/workspace/my-projects/AI-projects/cc-talkent-v2",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_ms": 321,
+      "stdout": "cc-readset: ok (check)\n",
+      "stderr": "",
+      "fingerprints": [],
+      "warnings": [],
+      "diagnosis": {}
+    },
+    {
+      "name": "cc-doctor-check",
+      "kind": "harness",
+      "command": [
+        "/home/lq/workspace/my-projects/AI-projects/cc-talkent-v2/.claude/scripts/cc-doctor-check"
+      ],
+      "cwd": "/home/lq/workspace/my-projects/AI-projects/cc-talkent-v2",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_ms": 156,
+      "stdout": "cc-doctor-check: ok\n",
+      "stderr": "",
+      "fingerprints": [],
+      "warnings": [],
+      "diagnosis": {}
+    },
+    {
+      "name": "cc-event-check",
+      "kind": "harness",
+      "command": [
+        "/home/lq/workspace/my-projects/AI-projects/cc-talkent-v2/.claude/scripts/cc-event-check",
+        "/home/lq/workspace/my-projects/AI-projects/cc-talkent-v2/.cc/changes/android-backend-ready"
+      ],
+      "cwd": "/home/lq/workspace/my-projects/AI-projects/cc-talkent-v2",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_ms": 32,
+      "stdout": "cc-event-check: ok\n",
+      "stderr": "",
+      "fingerprints": [],
+      "warnings": [],
+      "diagnosis": {}
+    },
+    {
+      "name": "cc-behavior-check",
+      "kind": "harness",
+      "command": [
+        "/home/lq/workspace/my-projects/AI-projects/cc-talkent-v2/.claude/scripts/cc-behavior-check"
+      ],
+      "cwd": "/home/lq/workspace/my-projects/AI-projects/cc-talkent-v2",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_ms": 1454,
+      "stdout": "cc-behavior-check: ok\n",
+      "stderr": "",
+      "fingerprints": [],
+      "warnings": [],
+      "diagnosis": {}
+    },
+    {
+      "name": "cc-upgrade-check",
+      "kind": "harness",
+      "command": [
+        "/home/lq/workspace/my-projects/AI-projects/cc-talkent-v2/.claude/scripts/cc-upgrade-check"
+      ],
+      "cwd": "/home/lq/workspace/my-projects/AI-projects/cc-talkent-v2",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_ms": 57,
+      "stdout": "cc-upgrade-check: ok\n",
+      "stderr": "",
+      "fingerprints": [],
+      "warnings": [],
+      "diagnosis": {}
+    },
+    {
+      "name": "cc-schema-check",
+      "kind": "harness",
+      "command": [
+        "/home/lq/workspace/my-projects/AI-projects/cc-talkent-v2/.claude/scripts/cc-schema-check",
+        "/home/lq/workspace/my-projects/AI-projects/cc-talkent-v2/.cc/changes/android-backend-ready"
+      ],
+      "cwd": "/home/lq/workspace/my-projects/AI-projects/cc-talkent-v2",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_ms": 577,
+      "stdout": "cc-schema-check: ok\n",
+      "stderr": "",
+      "fingerprints": [],
+      "warnings": [],
+      "diagnosis": {}
+    },
+    {
+      "name": "project checks",
+      "kind": "project",
+      "command": [],
+      "cwd": "",
+      "status": "skipped",
+      "exit_code": 0,
+      "duration_ms": 0,
+      "stdout": "",
+      "stderr": "language profile unresolved: cpp: module_file=Makefile; golang: module_file=go.mod, lockfile=go.sum, source=cmd/server/main.go (**/*.go); typescript: module_file=web/package.json, module_file=web/tsconfig.json, lockfile=web/package-lock.json, source=web/vite.config.ts (**/*.ts)",
+      "fingerprints": [],
+      "warnings": [],
+      "diagnosis": {
+        "cause": "The project verification profile could not be resolved from project state or repository markers.",
+        "fix_hint": "Confirm the project language profile before running project verification, or use --harness-only when only validating Harness assets.",
+        "doc_ref": ".claude/runtime/protocol.yaml"
+      }
+    }
+  ]
+}

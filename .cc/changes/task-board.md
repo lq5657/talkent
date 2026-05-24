@@ -4,8 +4,8 @@
 它不是 `spec.md` / `tasks.md` 的替代品；真实需求、验收和证据仍以单个 `.cc/changes/<change-id>/` 为准。
 
 ```text
-last_updated: 2026-05-20
-updated_by: cc-archive
+last_updated: 2026-05-24
+updated_by: cc-propose
 ```
 
 ## 1. 正式 Change
@@ -19,7 +19,7 @@ updated_by: cc-archive
 
 | 候选项 | 来源 | 推荐 change_id | 价值 | 前置条件 | 建议下一步 |
 |--------|------|----------------|------|----------|------------|
-| 待填充 | 待填充 | 待填充 | 待填充 | 待填充 | cc-propose |
+| android-backend-ready | review | cc-propose | 后端 JWT 认证 + 网络可达，为 Android 客户端做准备 | config, auth, server, web | 无 | cc-apply | 待 HARD-GATE 确认 |
 
 ## 3. 阻塞项
 
