@@ -112,6 +112,8 @@
 
 * **Go streaming channel 模式** : `<-chan T` + 内部 goroutine 桥接第三方流式 API → `technical-conventions/go-streaming-channel-pattern.md`
 * **Go JWT 认证中间件模式** : HMAC-SHA256 access token (1h) + refresh token (7d)，中间件位于 CORS 之后/mux 之前，支持 header 和 query param 双通道提取 token → `technical-conventions/jwt-auth-middleware-pattern.md`
+* **Android MVVM + Compose 项目模板** : Gradle Kotlin DSL + Compose BOM + MVVM (StateFlow) + Retrofit/OkHttp/Moshi + 手动 DI + EncryptedSharedPreferences → `technical-conventions/android-mvvm-compose-template.md`
+* **OkHttp Interceptor Token 自动刷新** : OkHttp Interceptor 拦截 401 → 同步 refresh → 更新 token → 重试；refresh 失败 emit logout event → `technical-conventions/okhttp-interceptor-token-refresh.md`
 
 #### Refinement Candidates
 

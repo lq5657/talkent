@@ -1,6 +1,6 @@
 ---
 change_id: android-core-shell
-status: review
+status: done
 depends_on: []
 parallel_safe: true
 branch: feat/android-core-shell
