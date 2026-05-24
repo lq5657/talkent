@@ -62,6 +62,7 @@ fun NavGraph(
         ) { backStackEntry ->
             val sessionId = backStackEntry.arguments?.getString("sessionId") ?: return@composable
             ChatScreen(
+                application = app,
                 sessionId = sessionId,
                 sessionRepo = app.sessionRepo,
                 onNavigateToReport = { id ->

@@ -1,10 +1,12 @@
 package com.talkent.app.ui.chat
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.talkent.app.data.model.ChatStreamEvent
-import com.talkent.app.data.model.EndSessionResponse
 import com.talkent.app.data.repository.SessionRepo
+import com.talkent.app.util.SpeechRecorder
+import com.talkent.app.util.TtsPlayer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,19 +28,63 @@ data class ChatUiState(
     val isEnded: Boolean = false,
     val isLoading: Boolean = false,
     val reportId: Long? = null,
-    val error: String? = null
+    val error: String? = null,
+    val isRecording: Boolean = false,
+    val voicePartial: String = "",
+    val voiceEnabled: Boolean = true,
+    val ttsAvailable: Boolean = true
 )
 
 class ChatViewModel(
+    private val application: Application,
     private val sessionId: String,
     private val sessionRepo: SessionRepo
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
+    val speechRecorder = SpeechRecorder(application)
+    val ttsPlayer = TtsPlayer(application)
+
     init {
         loadSession()
+        ttsPlayer.initialize()
+    }
+
+    // --- Voice recording ---
+
+    fun startRecording() {
+        ttsPlayer.stop() // Interrupt TTS
+        speechRecorder.startListening { text ->
+            _uiState.value = _uiState.value.copy(inputText = text, isRecording = false)
+            if (text.isNotBlank()) sendMessage()
+        }
+        _uiState.value = _uiState.value.copy(isRecording = true, voicePartial = "")
+    }
+
+    fun stopRecording() {
+        speechRecorder.stopListening()
+    }
+
+    // --- Voice state sync from SpeechRecorder flow ---
+
+    fun collectSpeechState() {
+        viewModelScope.launch {
+            speechRecorder.state.collect { speechState ->
+                _uiState.value = _uiState.value.copy(
+                    isRecording = speechState.isListening,
+                    voicePartial = speechState.partialResult,
+                    voiceEnabled = speechState.error !is String || speechState.error != "需要录音权限"
+                )
+            }
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        speechRecorder.destroy()
+        ttsPlayer.shutdown()
     }
 
     private fun loadSession() {
@@ -108,6 +154,9 @@ class ChatViewModel(
                             currentRound = event.roundInfo?.current ?: _uiState.value.currentRound,
                             isLast = event.roundInfo?.isLast ?: false
                         )
+                    }
+                        // Auto-play TTS
+                        ttsPlayer.speak(finalContent)
                     }
                     "error" -> {
                         _uiState.value = _uiState.value.copy(

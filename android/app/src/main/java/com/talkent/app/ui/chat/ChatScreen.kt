@@ -1,20 +1,26 @@
 package com.talkent.app.ui.chat
 
+import android.app.Application
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -23,14 +29,17 @@ import com.talkent.app.data.repository.SessionRepo
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
+    application: Application,
     sessionId: String,
     sessionRepo: SessionRepo,
     onNavigateToReport: (String) -> Unit,
     onNavigateBack: () -> Unit
 ) {
-    val viewModel = remember { ChatViewModel(sessionId, sessionRepo) }
+    val viewModel = remember { ChatViewModel(application, sessionId, sessionRepo) }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
+
+    LaunchedEffect(Unit) { viewModel.collectSpeechState() }
 
     LaunchedEffect(state.reportId) {
         state.reportId?.let { onNavigateToReport(sessionId) }
@@ -109,6 +118,20 @@ fun ChatScreen(
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
 
+            // Recording animation
+            if (state.isRecording) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = state.voicePartial.ifEmpty { "🎤 正在聆听..." },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
             // Input area
             if (!state.isEnded) {
                 Row(
@@ -120,14 +143,46 @@ fun ChatScreen(
                         onValueChange = viewModel::updateInput,
                         modifier = Modifier.weight(1f),
                         placeholder = { Text("输入消息...") },
-                        enabled = !state.isStreaming,
+                        enabled = !state.isStreaming && !state.isRecording,
                         singleLine = false,
                         maxLines = 3
                     )
-                    Spacer(Modifier.width(8.dp))
+
+                    Spacer(Modifier.width(4.dp))
+
+                    // Mic button (press-and-hold)
                     IconButton(
-                        onClick = viewModel::sendMessage,
-                        enabled = !state.isStreaming && state.inputText.isNotBlank()
+                        onClick = {},
+                        modifier = Modifier
+                            .pointerInput(Unit) {
+                                detectTapGestures(
+                                    onPress = {
+                                        viewModel.startRecording()
+                                        tryAwaitRelease()
+                                        viewModel.stopRecording()
+                                    }
+                                )
+                            }
+                            .clip(CircleShape)
+                            .background(
+                                if (state.isRecording) MaterialTheme.colorScheme.error
+                                else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                            ),
+                        enabled = !state.isStreaming
+                    ) {
+                        Icon(
+                            if (state.isRecording) Icons.Filled.Stop else Icons.Filled.Mic,
+                            contentDescription = if (state.isRecording) "停止" else "语音输入",
+                            tint = if (state.isRecording) MaterialTheme.colorScheme.onError
+                                   else MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    Spacer(Modifier.width(4.dp))
+
+                    IconButton(
+                        onClick = { if (state.inputText.isNotBlank()) viewModel.sendMessage() },
+                        enabled = !state.isStreaming && state.inputText.isNotBlank() && !state.isRecording
                     ) {
                         Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "发送")
                     }
