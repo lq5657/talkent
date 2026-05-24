@@ -7,6 +7,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/lq5657/talkent/internal/auth"
 	"github.com/lq5657/talkent/internal/config"
 	"github.com/lq5657/talkent/internal/llm"
 	"github.com/lq5657/talkent/internal/log"
@@ -68,7 +69,12 @@ func main() {
 		}
 	}
 
+	jwtSvc := auth.NewJWTService(cfg.Auth.JWTSecret, cfg.Auth.AccessExpiry, cfg.Auth.RefreshExpiry)
+	authHandler := auth.NewHandler(jwtSvc, &cfg.Auth, logger)
+	authMw := auth.AuthMiddleware(jwtSvc, logger)
+
 	srv := server.New(cfg, db, logger, func(mux *http.ServeMux) {
+		authHandler.RegisterRoutes(mux)
 		roleHandler.RegisterRoutes(mux)
 		sessionHandler.RegisterRoutes(mux)
 		analysisHandler.RegisterRoutes(mux)
@@ -76,7 +82,7 @@ func main() {
 		// Frontend static files + SPA fallback
 		mux.Handle("GET /assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("web/dist/assets"))))
 		mux.Handle("/", server.SpaHandler(http.Dir("web/dist")))
-	})
+	}, authMw)
 
 	if err := server.Run(srv, logger); err != nil {
 		logger.Error("server stopped", "error", err)

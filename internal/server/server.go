@@ -13,7 +13,7 @@ import (
 	"github.com/lq5657/talkent/internal/config"
 )
 
-func New(cfg *config.Config, db *sql.DB, logger *slog.Logger, registerRoutes func(*http.ServeMux)) *http.Server {
+func New(cfg *config.Config, db *sql.DB, logger *slog.Logger, registerRoutes func(*http.ServeMux), authMiddleware func(http.Handler) http.Handler) *http.Server {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /health", healthHandler(db, logger))
@@ -28,6 +28,9 @@ func New(cfg *config.Config, db *sql.DB, logger *slog.Logger, registerRoutes fun
 	}
 
 	var handler http.Handler = mux
+	if authMiddleware != nil {
+		handler = authMiddleware(handler)
+	}
 	handler = corsMiddleware(handler)
 	handler = RecoveryMiddleware(logger)(handler)
 	handler = TimeoutMiddleware(timeout)(handler)
