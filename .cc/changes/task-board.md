@@ -14,7 +14,7 @@ updated_by: cc-propose
 |-----------|------|------|----------|----------|-------------|----------|----------|
 | message-timing | done | cc-archive | 对话页消息显示开始时间、结束时间、持续时间 | session handler/service, ChatView, MessageBubble | 无 | — | 已归档，0 open findings |
 | voice-interaction | done | cc-archive | 流式文字 + 浏览器语音交互（STT/TTS） | llm, session, server, ChatView, ChatInput, MessageBubble | 无 | — | 5 findings fixed, 3 knowledge entries, L4 verified |
-| android-core-shell | propose | cc-propose | Android 项目骨架 + 4 页面 (Setup/Chat/Report/Settings) | android/ | 无 | cc-apply | 待 HARD-GATE 确认 |
+| android-core-shell | review | cc-propose | Android 项目骨架 + 4 页面 (Setup/Chat/Report/Settings) | android/ | 无 | cc-apply | 待 HARD-GATE 确认 |
 
 ## 2. Backlog 候选
 
