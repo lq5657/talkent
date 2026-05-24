@@ -6,6 +6,7 @@ import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.talkent.app.data.api.AuthInterceptor
 import com.talkent.app.data.api.SseClient
 import com.talkent.app.data.api.TalkentApi
+import com.talkent.app.data.local.TalkentDatabase
 import com.talkent.app.data.repository.AuthRepo
 import com.talkent.app.data.repository.SessionRepo
 import com.talkent.app.util.TokenManager
@@ -27,6 +28,8 @@ class TalkentApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+
+        val database = TalkentDatabase.getInstance(this)
 
         tokenManager = TokenManager(this)
         urlConfig = UrlConfig(this)
@@ -52,7 +55,7 @@ class TalkentApp : Application() {
         api = retrofit.create(TalkentApi::class.java)
         sseClient = SseClient(moshi)
         authRepo = AuthRepo(api, tokenManager)
-        sessionRepo = SessionRepo(api, sseClient, tokenManager, urlConfig)
+        sessionRepo = SessionRepo(api, sseClient, tokenManager, urlConfig, database)
     }
 
     fun updateBaseUrl(newUrl: String) {
