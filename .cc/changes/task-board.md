@@ -16,6 +16,7 @@ updated_by: cc-archive
 | voice-interaction | done | cc-archive | 流式文字 + 浏览器语音交互（STT/TTS） | llm, session, server, ChatView, ChatInput, MessageBubble | 无 | — | 5 findings fixed, 3 knowledge entries, L4 verified |
 | android-backend-ready | done | cc-archive | 后端 JWT 认证 + 网络可达 | config, auth, server, web | 无 | -- | E2E 6/6 PASS, 2 knowledge |
 | android-core-shell | done | cc-archive | Android 项目骨架 + 4 页面 (Setup/Chat/Report/Settings) | android/ | 无 | -- | 0 open findings, 2 knowledge |
+| android-voice | propose | cc-propose | Android 语音交互 (STT/TTS) — 按住说话 + 自动朗读 | android/ui/chat | android-core-shell | cc-apply | 待 HARD-GATE 确认 |
 
 ## 2. Backlog 候选
 
