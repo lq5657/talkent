@@ -27,25 +27,19 @@ func NewJWTService(secret string, accessExpiry, refreshExpiry time.Duration) *JW
 }
 
 func (s *JWTService) GenerateAccessToken(username string) (string, error) {
-	now := time.Now()
-	claims := &Claims{
-		RegisteredClaims: jwt.RegisteredClaims{
-			IssuedAt:  jwt.NewNumericDate(now),
-			ExpiresAt: jwt.NewNumericDate(now.Add(s.accessExpiry)),
-			Subject:   username,
-		},
-		Username: username,
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(s.secret)
+	return s.generateToken(username, s.accessExpiry)
 }
 
 func (s *JWTService) GenerateRefreshToken(username string) (string, error) {
+	return s.generateToken(username, s.refreshExpiry)
+}
+
+func (s *JWTService) generateToken(username string, expiry time.Duration) (string, error) {
 	now := time.Now()
 	claims := &Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(now),
-			ExpiresAt: jwt.NewNumericDate(now.Add(s.refreshExpiry)),
+			ExpiresAt: jwt.NewNumericDate(now.Add(expiry)),
 			Subject:   username,
 		},
 		Username: username,

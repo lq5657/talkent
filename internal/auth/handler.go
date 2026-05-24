@@ -4,18 +4,25 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/lq5657/talkent/internal/config"
 )
 
 type Handler struct {
-	jwtSvc *JWTService
-	cfg    *config.AuthConfig
-	logger *slog.Logger
+	jwtSvc      *JWTService
+	cfg         *config.AuthConfig
+	logger      *slog.Logger
+	rateLimiter *rateLimiter
 }
 
 func NewHandler(jwtSvc *JWTService, cfg *config.AuthConfig, logger *slog.Logger) *Handler {
-	return &Handler{jwtSvc: jwtSvc, cfg: cfg, logger: logger}
+	return &Handler{
+		jwtSvc:      jwtSvc,
+		cfg:         cfg,
+		logger:      logger,
+		rateLimiter: newRateLimiter(5, time.Minute),
+	}
 }
 
 func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
@@ -34,6 +41,13 @@ type tokenResponse struct {
 }
 
 func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
+	ip := clientIP(r)
+	if !h.rateLimiter.allow(ip) {
+		h.logger.Warn("login rate limited", "ip", ip)
+		writeAuthError(w, "too many attempts, try again later", http.StatusTooManyRequests)
+		return
+	}
+
 	var req loginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeAuthError(w, "invalid request body", http.StatusBadRequest)
