@@ -1,3 +1,5 @@
+import { useAuth } from '../composables/useAuth'
+
 const API_BASE = '/api'
 
 class ApiError extends Error {
@@ -10,6 +12,30 @@ class ApiError extends Error {
   }
 }
 
+function getAuthHeaders(): Record<string, string> {
+  const token = useAuth().getAccessToken()
+  if (token) {
+    return { Authorization: `Bearer ${token}` }
+  }
+  return {}
+}
+
+let isRefreshing = false
+let refreshPromise: Promise<string | null> | null = null
+
+async function tryRefreshToken(): Promise<boolean> {
+  if (isRefreshing) {
+    const token = await refreshPromise
+    return token !== null
+  }
+  isRefreshing = true
+  refreshPromise = useAuth().refreshAccessToken()
+  const token = await refreshPromise
+  isRefreshing = false
+  refreshPromise = null
+  return token !== null
+}
+
 async function apiRequest<T>(
   method: string,
   path: string,
@@ -17,7 +43,10 @@ async function apiRequest<T>(
 ): Promise<T> {
   const opts: RequestInit = {
     method,
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders(),
+    },
   }
   if (body !== undefined) {
     opts.body = JSON.stringify(body)
@@ -31,6 +60,25 @@ async function apiRequest<T>(
       throw new ApiError('网络连接失败，请检查后端服务是否启动', 0)
     }
     throw new ApiError('请求失败，请稍后重试', 0)
+  }
+
+  if (res.status === 401) {
+    const refreshed = await tryRefreshToken()
+    if (refreshed) {
+      // Retry with new token
+      const newHeaders = {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      }
+      const retryRes = await fetch(`${API_BASE}${path}`, { ...opts, headers: newHeaders })
+      if (retryRes.ok) {
+        const data = await retryRes.json()
+        return data as T
+      }
+    }
+    useAuth().clearTokens()
+    window.location.href = '/login'
+    throw new ApiError('登录已过期，请重新登录', 401)
   }
 
   if (!res.ok) {
@@ -224,8 +272,10 @@ async function* chatStream(
   content: string,
   signal?: AbortSignal,
 ): AsyncGenerator<ChatStreamEvent> {
+  const token = useAuth().getAccessToken()
+  const tokenParam = token ? `&token=${encodeURIComponent(token)}` : ''
   const res = await fetch(
-    `${API_BASE}/sessions/${sessionId}/chat/stream?content=${encodeURIComponent(content)}`,
+    `${API_BASE}/sessions/${sessionId}/chat/stream?content=${encodeURIComponent(content)}${tokenParam}`,
     { signal },
   )
 
