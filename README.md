@@ -42,14 +42,19 @@ cd web && npm install && npm run build && cd ..
 # 1. 设置 Android SDK 路径
 export ANDROID_HOME=~/android-sdk
 
-# 2. 编译 Debug APK（18.7MB）
+# 2. 编译 Debug APK（18.7MB，开发调试用）
 cd android && ./gradlew assembleDebug
 # 产物: android/app/build/outputs/apk/debug/app-debug.apk
 
-# 3. 运行单元测试（32 tests）
+# 3. 编译 Release APK（需签名，生产发布用）
+./gradlew assembleRelease
+# 产物: android/app/build/outputs/apk/release/app-release-unsigned.apk
+# 正式发布需配置 signingConfig 签名
+
+# 4. 运行单元测试（32 tests）
 ./gradlew test
 
-# 4. 安装到模拟器或真机
+# 5. 安装到模拟器或真机
 adb install app/build/outputs/apk/debug/app-debug.apk
 ```
 
@@ -186,7 +191,8 @@ npm run build           # 生产构建
 # Android
 cd android
 export ANDROID_HOME=~/android-sdk
-./gradlew assembleDebug     # 编译 APK
+./gradlew assembleDebug     # 编译 Debug APK
+./gradlew assembleRelease   # 编译 Release APK
 ./gradlew test               # 运行单元测试
 ./gradlew clean              # 清理构建产物
 
