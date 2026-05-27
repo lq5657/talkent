@@ -5,6 +5,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 
 class AuthInterceptor(
@@ -65,10 +67,7 @@ class AuthInterceptor(
                 .url("${baseUrlProvider()}/api/auth/refresh")
                 .header("Content-Type", "application/json")
                 .post(
-                    okhttp3.RequestBody.create(
-                        okhttp3.MediaType.parse("application/json")!!,
-                        """{"refresh_token":"$refreshToken"}"""
-                    )
+                    """{"refresh_token":"$refreshToken"}""".toRequestBody("application/json".toMediaType())
                 )
                 .build()
             val response = client.newCall(request).execute()
