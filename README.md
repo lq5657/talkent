@@ -15,7 +15,7 @@
 
 ## 快速开始
 
-**前置要求**：Go 1.24+, Node.js 20+
+**前置要求**：Go 1.24+, Node.js 20+, Android SDK 35+（可选，仅 Android 客户端）
 
 ```bash
 # 1. 配置
@@ -36,11 +36,24 @@ cd web && npm install && npm run build && cd ..
 
 ### Android 客户端
 
+**前置要求**：Android SDK 35+, JDK 17+, Gradle 8.9+（或使用项目自带 `gradlew`）
+
 ```bash
-# 在 Android Studio 中打开 android/ 目录
-# 默认连接 http://10.0.2.2:8080（模拟器本机映射）
-# 真机需在 App 内设置页面配置后端 IP
+# 1. 设置 Android SDK 路径
+export ANDROID_HOME=~/android-sdk
+
+# 2. 编译 Debug APK（18.7MB）
+cd android && ./gradlew assembleDebug
+# 产物: android/app/build/outputs/apk/debug/app-debug.apk
+
+# 3. 运行单元测试（32 tests）
+./gradlew test
+
+# 4. 安装到模拟器或真机
+adb install app/build/outputs/apk/debug/app-debug.apk
 ```
+
+默认连接 `http://10.0.2.2:8080`（Android 模拟器到宿主机的约定映射），真机请在 App 设置页面配置后端 IP。
 
 ## 配置
 
@@ -170,8 +183,12 @@ npm install             # 安装依赖
 npm run dev             # 开发服务器（:5173，自动代理 API 到 :8080）
 npm run build           # 生产构建
 
-# Android（在 Android Studio 中打开 android/）
-# 或命令行：cd android && ./gradlew assembleDebug
+# Android
+cd android
+export ANDROID_HOME=~/android-sdk
+./gradlew assembleDebug     # 编译 APK
+./gradlew test               # 运行单元测试
+./gradlew clean              # 清理构建产物
 
 # E2E 验证
 ./test/e2e/curl/run-all.sh              # 运行全部场景
