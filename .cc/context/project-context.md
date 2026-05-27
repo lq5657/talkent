@@ -37,14 +37,14 @@ alwaysApply: true
 * 当前阶段: 已接入规范
 * 应用名: Talkent
 * 简介: 角色扮演对话训练智能体 — 自由设定角色和场景，与 AI 进行 1v1 沉浸式对话训练，结束后获得多维度、结构化的表达分析反馈
-* 运行形态: HTTP API + SPA（单服务）
+* 运行形态: HTTP API + SPA + Android 原生客户端（多平台）
 
 #### 2. 技术入口（必填）
 
-* 构建工具: Go Modules (`go.mod`), npm/Vite (`web/package.json`)
-* 依赖入口: `go.mod` (后端), `web/package.json` (前端)
-* 启动入口: `cmd/server/main.go` (单二进制), 命令: `go run ./cmd/server/` 或 `make run`
-* 多入口形态: 单服务 / 单二进制
+* 构建工具: Go Modules (`go.mod`), npm/Vite (`web/package.json`), Gradle Kotlin DSL (`android/`)
+* 依赖入口: `go.mod` (后端), `web/package.json` (前端), `android/build.gradle.kts` (Android)
+* 启动入口: `cmd/server/main.go` (Go 服务), 命令: `go run ./cmd/server/` 或 `make run`; `android/` → `./gradlew assembleDebug` (Android APK)
+* 多入口形态: 多平台（Go 服务 + Web SPA + Android 客户端）
 
 #### 3. 关键目录导航（必填）
 
@@ -61,6 +61,7 @@ alwaysApply: true
 | `internal/server/` | HTTP 路由、中间件与静态文件托管 | SPA fallback handler |
 | `internal/log/` | slog 日志初始化 | 支持 file/stdout |
 | `web/` | Vue 3 前端 SPA | Composition API + Tailwind CSS v4 + Vite |
+| `android/` | Android 原生客户端 | Kotlin + Jetpack Compose + Room + Gradle Kotlin DSL |
 | `test/e2e/` | E2E 验证场景与 curl 脚本 | 5 个场景 + run-all.sh |
 
 #### 4. 配置与测试入口（必填）
@@ -248,7 +249,7 @@ active ──┬── Chat() 达到 RoundLimit ──→ completed (auto)
 
 - 已确认单仓库、主语言 (Go + TypeScript/Vue)、启动入口和配置入口
 - 已确认测试入口、测试文件模式和 E2E 入口
-- 已确认核心模块边界 (9 个 internal package + web 前端) 和关键依赖
+- 已确认核心模块边界 (9 个 internal package + web 前端 + android/ 客户端) 和关键依赖
 - 已确认项目运行形态和主要链路 (对话训练、分析报告、角色推荐、自动分析触发)
 - **本次 enrich 新增确认**: 中间件栈顺序与职责、日志方案 (TextHandler + AddSource + RequestID)、会话状态机 (active→completed)、数据库 Schema (3 表 3 索引)、Migration 策略 (幂等重跑)、记忆窗口/摘要压缩策略 (窗口+摘要+降级)、前端测试情况 (无单元/组件测试)、健康检查端点、CORS 策略、优雅关闭 (5s 超时)、全部 11 个环境变量
 - 尚未确认: 无 Metrics/Alerting/Tracing 方案（已确认"无"即为事实）、Bugfix 回归要求、环境差异策略（已确认"单一 config.yaml"即为事实）

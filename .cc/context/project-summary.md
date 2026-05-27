@@ -11,8 +11,8 @@ alwaysApply: true
 - 应用名: Talkent
 - 模式: 已有项目
 - 当前阶段: 已接入规范
-- 主语言 / language profile: Go (golang) + TypeScript/Vue 3 前端
-- 简介: 角色扮演对话训练智能体 — 自由设定角色和场景，与 AI 进行 1v1 沉浸式对话训练，结束后获得多维度、结构化的表达分析反馈
+- 主语言 / language profile: Go (golang) + TypeScript/Vue 3 前端 + Kotlin/Android
+- 简介: 角色扮演对话训练智能体 — 自由设定角色和场景，与 AI 进行 1v1 沉浸式对话训练，结束后获得多维度、结构化的表达分析反馈。多平台：Go HTTP API 服务端 + Vue 3 Web SPA + Android 原生客户端
 
 #### 2. 高频入口
 
@@ -21,7 +21,8 @@ alwaysApply: true
 | 启动入口 | `cmd/server/main.go` → `make run` / `go run ./cmd/server/` | `confirmed` (go.mod module + main.go) |
 | 依赖入口 | `go.mod` (后端), `web/package.json` (前端) | `confirmed` (文件存在) |
 | 配置入口 | `config.yaml` (默认值见 `internal/config/config.go`) | `confirmed` (文件存在 + 代码确认) |
-| 测试入口 / 目录 / 文件模式 | `go test ./...` (每个 package 下 `*_test.go`); E2E: `./test/e2e/curl/run-all.sh` | `confirmed` (13 个 _test.go 文件 + E2E 脚本) |
+| Android 构建入口 | `android/` (Gradle Kotlin DSL + `./gradlew assembleDebug`) | `confirmed` (settings.gradle.kts + build.gradle.kts) |
+| 测试入口 / 目录 / 文件模式 | `go test ./...` (每个 package 下 `*_test.go`); E2E: `./test/e2e/curl/run-all.sh` | `confirmed` (16 个 _test.go 文件 + 6 个 E2E 脚本) |
 
 状态说明：
 - `confirmed`：已有项目中已从仓库事实确认，或新项目中对应文件/目录已经创建并可验证。

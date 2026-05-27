@@ -4,7 +4,7 @@
 它只沉淀可复用、可验证、相对稳定的工程事实；临时猜测必须写入"待确认"，不得写成事实。
 
 ```text
-last_updated: 2026-05-24
+last_updated: 2026-05-26
 updated_by: cc-init
 confidence: high
 ```
@@ -24,6 +24,7 @@ confidence: high
 | HTTP 服务 | `internal/server/` | 路由注册、4 层中间件栈、静态文件、SPA fallback、优雅关闭 | `server.go`, `middleware.go` | 所有 handler | high |
 | 日志 | `internal/log/` | slog TextHandler 初始化 (AddSource=true) | `log.go` | log/slog | high |
 | 前端 SPA | `web/` | Vue 3 + Tailwind CSS v4 + Vite, 3 个视图 (Setup/Chat/Report) | `src/main.ts` → `App.vue` → `router/` → `views/` | vue-router, marked, dompurify, highlight.js | high |
+| Android 客户端 | `android/` | Kotlin + Jetpack Compose, 4 页面 (Setup/Chat/Report/Settings) + 语音 + 离线缓存 | `app/src/main/java/com/talkent/app/MainActivity.kt` | Retrofit, Room, MediaRecorder, TTS | high |
 | E2E 验证 | `test/e2e/` | 5 个 curl 场景 + run-all.sh (全部 PASS 于 2026-04-30) | `curl/run-all.sh` | 后端 API | high |
 
 ## 2. 关键链路
@@ -73,6 +74,10 @@ confidence: high
 |-----------|----------|----------|----------|------|
 | message-timing | session handler/service, ChatView, MessageBubble | Chat API 响应时序 + 消息时间展示 | V1 (L2 package), V2 (L4 manual) | done |
 | voice-interaction | llm, session, server, ChatView, ChatInput, MessageBubble | SSE ChatStream + 浏览器语音交互 (STT/TTS) | L4 manual verified, 5 findings fixed | done |
+| android-backend-ready | config, auth, server, web | 后端 JWT 认证 + 网络可达 | E2E 6/6 PASS | done |
+| android-core-shell | android/ | Android 项目骨架 + 4 页面 (Setup/Chat/Report/Settings) | 0 open findings | done |
+| android-voice | android/ui/chat | Android 语音交互 (STT/TTS) | 0 open findings | done |
+| android-offline-cache | android/data/local | Room 离线缓存 — 会话+消息+报告 | 0 open findings | done |
 
 ## 6. 待确认事项
 
