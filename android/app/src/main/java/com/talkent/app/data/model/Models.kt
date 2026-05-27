@@ -181,3 +181,11 @@ data class ChatStreamEvent(
 data class ApiError(
     val error: String
 )
+
+// --- Message (used across UI and data layers) ---
+
+data class Message(
+    val role: String, // "user", "assistant", or "assistant_streaming"
+    val content: String,
+    val createdAt: String = ""
+)

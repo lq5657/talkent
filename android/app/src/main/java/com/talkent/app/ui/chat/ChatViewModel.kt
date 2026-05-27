@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.talkent.app.data.model.ChatStreamEvent
+import com.talkent.app.data.model.Message
 import com.talkent.app.data.repository.SessionRepo
 import com.talkent.app.util.SpeechRecorder
 import com.talkent.app.util.TtsPlayer
@@ -11,12 +12,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-
-data class Message(
-    val role: String, // "user" or "assistant"
-    val content: String,
-    val createdAt: String = ""
-)
 
 data class ChatUiState(
     val messages: List<Message> = emptyList(),
@@ -154,7 +149,6 @@ class ChatViewModel(
                             currentRound = event.roundInfo?.current ?: _uiState.value.currentRound,
                             isLast = event.roundInfo?.isLast ?: false
                         )
-                    }
                         // Auto-play TTS
                         ttsPlayer.speak(finalContent)
                     }
